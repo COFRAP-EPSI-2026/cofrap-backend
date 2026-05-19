@@ -1,0 +1,90 @@
+meta {
+  name: Authenticate (auto TOTP)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{authenticate_user_url}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "{{username}}",
+    "password": "{{password}}",
+    "otp": "{{otp}}"
+  }
+}
+
+script:pre-request {
+  // Calcule le code TOTP courant à partir de totp_secret (RFC 6238 / HMAC-SHA1, fenêtre 30 s).
+  // Pas de lib externe — uniquement `crypto` Node.js, présent dans Bruno.
+  const crypto = require("crypto");
+
+  function base32Decode(s) {
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    s = String(s || "").replace(/=+$/, "").toUpperCase();
+    let bits = "";
+    for (const c of s) {
+      const idx = alphabet.indexOf(c);
+      if (idx < 0) continue;
+      bits += idx.toString(2).padStart(5, "0");
+    }
+    const bytes = [];
+    for (let i = 0; i + 8 <= bits.length; i += 8) {
+      bytes.push(parseInt(bits.substr(i, 8), 2));
+    }
+    return Buffer.from(bytes);
+  }
+
+  function totp(secretBase32, period = 30) {
+    const counter = Math.floor(Date.now() / 1000 / period);
+    const buf = Buffer.alloc(8);
+    buf.writeBigUInt64BE(BigInt(counter));
+    const key = base32Decode(secretBase32);
+    const hmac = crypto.createHmac("sha1", key).update(buf).digest();
+    const offset = hmac[hmac.length - 1] & 0x0f;
+    const code = ((hmac[offset] & 0x7f) << 24
+                | (hmac[offset + 1] & 0xff) << 16
+                | (hmac[offset + 2] & 0xff) << 8
+                | (hmac[offset + 3] & 0xff)) % 1_000_000;
+    return code.toString().padStart(6, "0");
+  }
+
+  const secret = bru.getEnvVar("totp_secret");
+  if (secret) {
+    bru.setVar("otp", totp(secret));
+  } else {
+    bru.setVar("otp", "000000");
+  }
+}
+
+tests {
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("authenticated is true", function() {
+    expect(res.getBody().authenticated).to.equal(true);
+  });
+
+  test("expired is false", function() {
+    expect(res.getBody().expired).to.equal(false);
+  });
+
+  test("returns username", function() {
+    expect(res.getBody().username).to.equal(bru.getVar("username"));
+  });
+}
+
+docs {
+  Authentification réussie attendue.
+
+  Pré-requis :
+  - `01 Onboarding/1. Generate password` exécuté → scanner le QR et coller le mot de passe en clair dans la variable `password` de l'environnement.
+  - `01 Onboarding/2. Generate 2FA` exécuté → `totp_secret` est rempli automatiquement par le script post-réponse.
+
+  Le pre-request script calcule le code à 6 chiffres courant. Si le test échoue à cause d'un décalage d'horloge, relancer (le code change toutes les 30 s).
+}

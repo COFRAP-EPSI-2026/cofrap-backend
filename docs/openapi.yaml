@@ -1,0 +1,404 @@
+# Généré par scripts/generate-openapi.py — NE PAS ÉDITER À LA MAIN.
+# Re-lancer après modification d'un main.py ou d'un modèle Pydantic.
+
+openapi: 3.1.0
+info:
+  title: COFRAP Backend API
+  version: 0.1.0
+  summary: PoC COFRAP — génération de mot de passe, 2FA TOTP et authentification.
+  description: API serverless (OpenFaaS) du PoC COFRAP. Trois fonctions Python/FastAPI exposées via le gateway OpenFaaS, persistance
+    en MariaDB, chiffrement at-rest des credentials (Fernet).
+  contact:
+    name: COFRAP-EPSI-2026
+    url: https://github.com/COFRAP-EPSI-2026/cofrap-backend
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+servers:
+- url: http://127.0.0.1:8080
+  description: Local OpenFaaS gateway (port-forwardé)
+- url: https://openfaas.cofrap.example.com
+  description: Cluster déployé (placeholder à éditer)
+tags:
+- name: generate-password
+  description: Génère un mot de passe 24 caractères, chiffré et stocké, transmis via QR.
+- name: generate-2fa
+  description: Génère un secret TOTP (RFC 6238) pour un utilisateur existant.
+- name: authenticate-user
+  description: Authentifie un utilisateur, contrôle l'ancienneté (6 mois).
+paths:
+  /function/generate-password:
+    post:
+      summary: Génère ou réinitialise le mot de passe d'un utilisateur
+      operationId: generate_password_generatePassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/generate_password_GenerateRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/generate_password_GenerateResponse'
+        '500':
+          description: Erreur BDD — la transaction est rollback.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/generate_password_HTTPValidationError'
+      tags:
+      - generate-password
+  /function/generate-password/healthz:
+    get:
+      tags:
+      - generate-password
+      - health
+      summary: Sonde de santé
+      operationId: generate_password_healthz
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/generate_password_HealthResponse'
+  /function/generate-2fa:
+    post:
+      summary: Génère et stocke le secret TOTP d'un utilisateur existant
+      operationId: generate_2fa_generate2FA
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/generate_2fa_GenerateRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/generate_2fa_GenerateResponse'
+        '404':
+          description: Utilisateur inconnu — appeler `generate-password` au préalable.
+        '500':
+          description: Erreur BDD — la transaction est rollback.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/generate_2fa_HTTPValidationError'
+      tags:
+      - generate-2fa
+  /function/generate-2fa/healthz:
+    get:
+      tags:
+      - generate-2fa
+      - health
+      summary: Sonde de santé
+      operationId: generate_2fa_healthz
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/generate_2fa_HealthResponse'
+  /function/authenticate-user:
+    post:
+      summary: Authentifie un utilisateur
+      operationId: authenticate_user_authenticateUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/authenticate_user_AuthRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/authenticate_user_AuthSuccessResponse'
+        '401':
+          description: Mot de passe ou code TOTP invalide.
+        '404':
+          description: Utilisateur inconnu.
+        '409':
+          description: Compte incomplet (password ou mfa NULL en BDD).
+        '500':
+          description: Erreur interne.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/authenticate_user_HTTPValidationError'
+      tags:
+      - authenticate-user
+  /function/authenticate-user/healthz:
+    get:
+      tags:
+      - authenticate-user
+      - health
+      summary: Sonde de santé
+      operationId: authenticate_user_healthz
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/authenticate_user_HealthResponse'
+components:
+  schemas:
+    generate_password_GenerateRequest:
+      properties:
+        username:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Username
+          description: Identifiant utilisateur unique.
+      type: object
+      required:
+      - username
+      title: GenerateRequest
+    generate_password_GenerateResponse:
+      properties:
+        username:
+          type: string
+          title: Username
+          description: Identifiant utilisateur traité.
+        gendate:
+          type: integer
+          title: Gendate
+          description: Timestamp Unix (secondes) de génération.
+        qrcode_png_base64:
+          type: string
+          title: Qrcode Png Base64
+          description: QR code PNG encodé en base64, contenant le mot de passe en clair (transmission à usage unique).
+      type: object
+      required:
+      - username
+      - gendate
+      - qrcode_png_base64
+      title: GenerateResponse
+    generate_password_HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/generate_password_ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    generate_password_HealthResponse:
+      properties:
+        status:
+          type: string
+          title: Status
+          description: Statut de santé — toujours `ok` quand la fonction répond.
+      type: object
+      required:
+      - status
+      title: HealthResponse
+    generate_password_ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    generate_2fa_GenerateRequest:
+      properties:
+        username:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Username
+          description: Identifiant utilisateur existant.
+      type: object
+      required:
+      - username
+      title: GenerateRequest
+    generate_2fa_GenerateResponse:
+      properties:
+        username:
+          type: string
+          title: Username
+          description: Identifiant utilisateur traité.
+        gendate:
+          type: integer
+          title: Gendate
+          description: Timestamp Unix (secondes) de génération.
+        otpauth_uri:
+          type: string
+          title: Otpauth Uri
+          description: URI `otpauth://totp/...` à importer dans une app authenticator.
+        qrcode_png_base64:
+          type: string
+          title: Qrcode Png Base64
+          description: QR code PNG (base64) encodant l'URI otpauth.
+      type: object
+      required:
+      - username
+      - gendate
+      - otpauth_uri
+      - qrcode_png_base64
+      title: GenerateResponse
+    generate_2fa_HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/generate_2fa_ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    generate_2fa_HealthResponse:
+      properties:
+        status:
+          type: string
+          title: Status
+      type: object
+      required:
+      - status
+      title: HealthResponse
+    generate_2fa_ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    authenticate_user_AuthRequest:
+      properties:
+        username:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Username
+          description: Identifiant utilisateur.
+        password:
+          type: string
+          minLength: 1
+          title: Password
+          description: Mot de passe en clair (24 caractères).
+        otp:
+          type: string
+          maxLength: 6
+          minLength: 6
+          pattern: ^\d{6}$
+          title: Otp
+          description: Code TOTP à 6 chiffres généré par l'app authenticator.
+      type: object
+      required:
+      - username
+      - password
+      - otp
+      title: AuthRequest
+    authenticate_user_AuthSuccessResponse:
+      properties:
+        authenticated:
+          type: boolean
+          title: Authenticated
+          description: '`true` si toutes les vérifications passent.'
+        expired:
+          type: boolean
+          title: Expired
+          description: '`true` si le compte est expiré (>6 mois ou flag positionné).'
+        username:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Username
+          description: Présent uniquement quand `authenticated == true`.
+        action:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Action
+          description: 'Présent quand `expired == true` : indique au frontend l''action requise.'
+          examples:
+          - regenerate_password_and_2fa
+      type: object
+      required:
+      - authenticated
+      - expired
+      title: AuthSuccessResponse
+    authenticate_user_HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/authenticate_user_ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    authenticate_user_HealthResponse:
+      properties:
+        status:
+          type: string
+          title: Status
+      type: object
+      required:
+      - status
+      title: HealthResponse
+    authenticate_user_ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError

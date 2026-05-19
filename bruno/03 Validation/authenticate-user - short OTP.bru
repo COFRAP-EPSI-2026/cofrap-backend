@@ -1,0 +1,29 @@
+meta {
+  name: authenticate-user - short OTP
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{authenticate_user_url}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "{{username}}",
+    "password": "{{password}}",
+    "otp": "123"
+  }
+}
+
+tests {
+  test("status is 422 (otp must be 6 digits)", function() {
+    expect(res.getStatus()).to.equal(422);
+  });
+}
+
+docs {
+  Le modèle Pydantic impose un OTP de 6 chiffres exactement (`pattern=r"^\d{6}$"`).
+}

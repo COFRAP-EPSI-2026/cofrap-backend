@@ -1,0 +1,35 @@
+meta {
+  name: Wrong OTP
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{authenticate_user_url}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "{{username}}",
+    "password": "{{password}}",
+    "otp": "123456"
+  }
+}
+
+tests {
+  test("status is 401", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+
+  test("detail mentions invalid otp", function() {
+    expect(res.getBody().detail).to.include("invalid otp");
+  });
+}
+
+docs {
+  Mot de passe correct mais code TOTP erroné → 401 avec `invalid otp`.
+
+  Remplir `password` dans l'environnement au préalable (sinon c'est l'erreur "invalid credentials" qui sera retournée — voir requête `Wrong password`).
+}

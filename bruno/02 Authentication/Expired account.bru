@@ -1,0 +1,55 @@
+meta {
+  name: Expired account
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{authenticate_user_url}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "{{username}}",
+    "password": "{{password}}",
+    "otp": "000000"
+  }
+}
+
+tests {
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("authenticated is false", function() {
+    expect(res.getBody().authenticated).to.equal(false);
+  });
+
+  test("expired is true", function() {
+    expect(res.getBody().expired).to.equal(true);
+  });
+
+  test("action asks to regenerate", function() {
+    expect(res.getBody().action).to.equal("regenerate_password_and_2fa");
+  });
+}
+
+docs {
+  Vérifie le comportement quand l'utilisateur a un compte trop ancien (> 6 mois).
+
+  La fonction renvoie un 200 (et pas une erreur) avec `expired: true` et `action: "regenerate_password_and_2fa"` — c'est le contrat avec le frontend, qui doit alors relancer le cycle de génération mot de passe + 2FA.
+
+  Pour reproduire le scénario sans attendre 6 mois, deux options :
+
+  1. Déployer les fonctions avec `EXPIRY_SECONDS=10` dans `stack.yml` (override de la fenêtre dans le code), patienter 10 s, ré-essayer l'authentification.
+  2. Forcer la BDD :
+     ```sql
+     UPDATE users SET expired = 1 WHERE username = 'michel.ranu';
+     -- ou bien
+     UPDATE users SET gendate = 1 WHERE username = 'michel.ranu';
+     ```
+
+  Une fois le test passé, ré-exécuter `01 Onboarding/1. Generate password` + `2. Generate 2FA` pour repartir d'un compte propre.
+}

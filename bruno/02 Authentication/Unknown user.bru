@@ -1,0 +1,29 @@
+meta {
+  name: Unknown user
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{authenticate_user_url}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "ghost.user.does.not.exist",
+    "password": "Whatever-24-Chars-Long!!00",
+    "otp": "000000"
+  }
+}
+
+tests {
+  test("status is 404", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+
+  test("detail says user not found", function() {
+    expect(res.getBody().detail).to.equal("user not found");
+  });
+}

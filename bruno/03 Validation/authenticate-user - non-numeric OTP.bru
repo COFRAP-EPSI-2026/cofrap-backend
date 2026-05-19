@@ -1,0 +1,25 @@
+meta {
+  name: authenticate-user - non-numeric OTP
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{authenticate_user_url}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "{{username}}",
+    "password": "{{password}}",
+    "otp": "abcdef"
+  }
+}
+
+tests {
+  test("status is 422", function() {
+    expect(res.getStatus()).to.equal(422);
+  });
+}

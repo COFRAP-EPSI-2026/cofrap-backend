@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls \"G:/Mon Drive/Scolaire/Master/L2/MSPR/GESTION_UN_PROJET_DE_DEV_SERVERLESS/\" 2>&1 | head -30)",
+      "Bash(python -m pip --version)",
+      "Bash(python -m venv .venv)",
+      "Bash(.venv/Scripts/python.exe -m pip install --quiet -r requirements-dev.txt)",
+      "Bash(.venv/Scripts/python.exe -m pytest tests/unit -x)",
+      "Bash(.venv/Scripts/python.exe -m pytest tests/unit -q)",
+      "Bash(docker compose *)",
+      "Bash(.venv/Scripts/python.exe -m pytest tests/integration -v)",
+      "Bash(.venv/Scripts/python.exe -m pytest -q)",
+      "Bash(.venv/Scripts/python.exe -m ruff check .)",
+      "Bash(.venv/Scripts/python.exe -m ruff format --check .)",
+      "Bash(.venv/Scripts/python.exe -m ruff check --fix .)",
+      "Bash(.venv/Scripts/python.exe -m ruff format .)",
+      "Bash(.venv/Scripts/python.exe -m pip install --quiet pyyaml==6.0.2)",
+      "Bash(.venv/Scripts/python.exe scripts/generate-openapi.py)"
+    ]
+  }
+}

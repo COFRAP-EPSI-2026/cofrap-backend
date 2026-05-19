@@ -1,0 +1,25 @@
+services:
+  mariadb:
+    image: mariadb:11
+    container_name: cofrap-mariadb
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-rootpass}
+      MARIADB_DATABASE: ${DB_NAME:-cofrap}
+      MARIADB_USER: ${DB_USER:-cofrap}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-cofrap_dev}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./deploy/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mariadb-admin ping -h 127.0.0.1 -u root -p"$$MARIADB_ROOT_PASSWORD"
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  mariadb_data:

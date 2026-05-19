@@ -1,0 +1,54 @@
+version: 1.0
+provider:
+  name: openfaas
+  gateway: http://127.0.0.1:8080
+
+functions:
+  generate-password:
+    lang: dockerfile
+    handler: ./functions/generate-password
+    image: ghcr.io/cofrap/generate-password:0.1.0
+    secrets:
+      - mariadb-password
+      - encryption-key
+    environment:
+      DB_HOST: mariadb.cofrap.svc.cluster.local
+      DB_PORT: "3306"
+      DB_NAME: cofrap
+      DB_USER: cofrap
+      read_timeout: 30s
+      write_timeout: 30s
+      exec_timeout: 30s
+
+  generate-2fa:
+    lang: dockerfile
+    handler: ./functions/generate-2fa
+    image: ghcr.io/cofrap/generate-2fa:0.1.0
+    secrets:
+      - mariadb-password
+      - encryption-key
+    environment:
+      DB_HOST: mariadb.cofrap.svc.cluster.local
+      DB_PORT: "3306"
+      DB_NAME: cofrap
+      DB_USER: cofrap
+      TOTP_ISSUER: COFRAP
+      read_timeout: 30s
+      write_timeout: 30s
+      exec_timeout: 30s
+
+  authenticate-user:
+    lang: dockerfile
+    handler: ./functions/authenticate-user
+    image: ghcr.io/cofrap/authenticate-user:0.1.0
+    secrets:
+      - mariadb-password
+      - encryption-key
+    environment:
+      DB_HOST: mariadb.cofrap.svc.cluster.local
+      DB_PORT: "3306"
+      DB_NAME: cofrap
+      DB_USER: cofrap
+      read_timeout: 30s
+      write_timeout: 30s
+      exec_timeout: 30s

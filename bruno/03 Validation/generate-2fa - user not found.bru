@@ -1,0 +1,31 @@
+meta {
+  name: generate-2fa - user not found
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{generate_2fa_url}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "ghost.user.never.created"
+  }
+}
+
+tests {
+  test("status is 404", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+
+  test("detail asks to run generate-password first", function() {
+    expect(res.getBody().detail).to.include("generate-password");
+  });
+}
+
+docs {
+  generate-2fa fait un UPDATE, pas un INSERT — il refuse de créer un secret TOTP pour un utilisateur qui n'a pas encore de mot de passe.
+}

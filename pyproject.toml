@@ -1,0 +1,52 @@
+[project]
+name = "cofrap-backend"
+version = "0.1.0"
+description = "PoC OpenFaaS backend pour la MSPR COFRAP — génération de mot de passe + 2FA + authentification."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = [".venv", "venv", "build", "dist"]
+
+[tool.ruff.lint]
+select = [
+  "E",    # pycodestyle errors
+  "W",    # pycodestyle warnings
+  "F",    # pyflakes
+  "I",    # isort
+  "B",    # bugbear
+  "UP",   # pyupgrade
+  "SIM",  # flake8-simplify
+  "RUF",  # ruff-specific
+]
+ignore = [
+  "E501", # ligne longue — déjà gérée par line-length, mais on tolère pour les SQL multilignes
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["B011", "SIM117"]
+"functions/*/db.py" = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = [
+  "-ra",
+  "--strict-markers",
+  "--strict-config",
+]
+markers = [
+  "unit: unit tests, no external dependencies",
+  "integration: integration tests, require a running MariaDB",
+]
+filterwarnings = [
+  "error",
+  "ignore::DeprecationWarning:pymysql.*",
+]

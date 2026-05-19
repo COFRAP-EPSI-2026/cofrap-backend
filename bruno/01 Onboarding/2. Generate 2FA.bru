@@ -1,0 +1,61 @@
+meta {
+  name: 2. Generate 2FA
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{generate_2fa_url}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "{{username}}"
+  }
+}
+
+script:post-response {
+  // Extrait automatiquement le secret TOTP de l'URI otpauth:// renvoyée
+  // pour que les tests d'authentification puissent calculer le code à 6 chiffres.
+  const body = res.getBody();
+  if (body && body.otpauth_uri) {
+    const match = body.otpauth_uri.match(/[?&]secret=([A-Z2-7]+)/i);
+    if (match) {
+      bru.setEnvVar("totp_secret", match[1]);
+    }
+  }
+  if (body && body.gendate) {
+    bru.setEnvVar("gendate", String(body.gendate));
+  }
+}
+
+tests {
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("body returns otpauth URI", function() {
+    const uri = res.getBody().otpauth_uri;
+    expect(uri).to.be.a("string");
+    expect(uri).to.match(/^otpauth:\/\/totp\//);
+    expect(uri).to.include("secret=");
+  });
+
+  test("body returns a base64 PNG QR code", function() {
+    expect(res.getBody().qrcode_png_base64).to.be.a("string");
+  });
+
+  test("totp_secret was captured", function() {
+    expect(bru.getEnvVar("totp_secret")).to.match(/^[A-Z2-7]+$/);
+  });
+}
+
+docs {
+  Génère le secret TOTP et son QR `otpauth://`. À scanner avec Google Authenticator / Authy / etc.
+
+  Le script post-réponse extrait automatiquement `secret=...` de l'URI et le stocke dans `totp_secret`, ce qui permet à la requête d'authentification de calculer le code à 6 chiffres à la volée — pas besoin de lire son téléphone pour tester.
+
+  Pré-requis : avoir exécuté `1. Generate password` au préalable (la fonction renvoie 404 si l'utilisateur n'existe pas).
+}

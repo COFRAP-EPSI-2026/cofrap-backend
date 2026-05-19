@@ -1,1 +1,204 @@
+<div align="center">
+
 # cofrap-backend
+
+**Backend serverless du PoC COFRAP** — gestion automatisée des credentials avec mot de passe robuste, 2FA TOTP et rotation 6 mois, déployé sur OpenFaaS.
+
+[![CI](https://github.com/COFRAP-EPSI-2026/cofrap-backend/actions/workflows/ci.yml/badge.svg)](https://github.com/COFRAP-EPSI-2026/cofrap-backend/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![OpenFaaS](https://img.shields.io/badge/OpenFaaS-Community-3b4cca?logo=openfaas&logoColor=white)](https://www.openfaas.com/)
+[![MariaDB](https://img.shields.io/badge/MariaDB-11-003545?logo=mariadb&logoColor=white)](https://mariadb.org/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+
+</div>
+
+---
+
+## Sommaire
+
+- [Contexte](#contexte)
+- [Architecture](#architecture)
+- [Fonctions](#fonctions)
+- [Démarrage rapide](#démarrage-rapide)
+- [Déploiement OpenFaaS](#déploiement-openfaas)
+- [Tests](#tests)
+- [CI/CD](#cicd)
+- [Structure du dépôt](#structure-du-dépôt)
+- [Documentation](#documentation)
+- [Contribuer](#contribuer)
+- [Licence](#licence)
+
+---
+
+## Contexte
+
+Réponse à la **MSPR TPRE912** (BLOC 2 — gestion d'un projet de développement serverless).
+
+La COFRAP, suite à plusieurs compromissions de comptes liés à des mots de passe faibles et à l'absence de 2FA, a remanié son processus de création de comptes : génération automatique d'un mot de passe à 24 caractères, activation forcée du 2FA TOTP, expiration à 6 mois. Ce dépôt en est le PoC backend serverless.
+
+Frontend TypeScript séparé · documentation détaillée dans [`docs/`](docs/).
+
+## Architecture
+
+```
+┌──────────────┐    HTTP/JSON     ┌────────────────────────┐    SQL    ┌──────────┐
+│ Frontend TS  │ ────────────────►│    OpenFaaS Gateway    │ ─────────►│ MariaDB  │
+└──────────────┘                  │                        │           └──────────┘
+                                  │  ├─ generate-password  │
+                                  │  ├─ generate-2fa       │
+                                  │  └─ authenticate-user  │
+                                  └────────────────────────┘
+                                          ▲
+                                          │  secrets OpenFaaS
+                                          │  ├─ mariadb-password
+                                          └──└─ encryption-key (Fernet)
+```
+
+**Stack** : Python 3.12 · FastAPI · Uvicorn · of-watchdog (HTTP mode) · PyMySQL · Fernet · pyotp · qrcode · MariaDB 11.
+
+→ Détails et justifications : [`docs/architecture.md`](docs/architecture.md) et [`docs/adr/`](docs/adr/).
+
+## Fonctions
+
+| Fonction                                                                    | Méthode | Description                                                                            |
+|-----------------------------------------------------------------------------|---------|----------------------------------------------------------------------------------------|
+| [`generate-password`](functions/generate-password/main.py)                  | `POST`  | Mot de passe 24 caractères avec complexité garantie, chiffré, transmis via QR PNG      |
+| [`generate-2fa`](functions/generate-2fa/main.py)                            | `POST`  | Secret TOTP base32, URI `otpauth://` + QR, chiffré en BDD                              |
+| [`authenticate-user`](functions/authenticate-user/main.py)                  | `POST`  | Vérifie credentials + TOTP, contrôle l'ancienneté 6 mois, bascule `expired` si périmé |
+
+Référence complète des payloads et codes erreur : [`docs/api.md`](docs/api.md).
+Contrat machine-lisible : [`docs/openapi.yaml`](docs/openapi.yaml) (OpenAPI 3.1, généré depuis FastAPI).
+
+## Démarrage rapide
+
+> Pré-requis : Python 3.12+, Docker, `git`.
+
+```bash
+git clone https://github.com/COFRAP-EPSI-2026/cofrap-backend.git
+cd cofrap-backend
+
+# Venv + dépendances dev
+python -m venv .venv
+.venv/Scripts/Activate.ps1                      # bash/zsh : source .venv/bin/activate
+pip install -r requirements-dev.txt
+
+# Clé Fernet + MariaDB locale
+cp .env.example .env
+python -c "from cryptography.fernet import Fernet; print('ENCRYPTION_KEY=' + Fernet.generate_key().decode())" >> .env
+docker compose up -d
+
+# Vérifier — 36 tests verts
+pytest
+```
+
+À ce stade, tout l'outillage est prêt. Pour lancer **une fonction localement hors OpenFaaS** :
+
+```bash
+cd functions/generate-password
+pip install -r requirements.txt
+uvicorn main:app --reload --port 5001
+```
+
+→ Tester via la [collection Bruno](bruno/) (`bruno/README.md`).
+
+## Déploiement OpenFaaS
+
+```bash
+# 1. OpenFaaS installé sur un cluster Kubernetes (K3S, minikube, GKE/AKS/EKS…)
+faas-cli login -g $OPENFAAS_URL -u admin --password-stdin <<< $OF_PASSWORD
+
+# 2. MariaDB
+kubectl apply -f deploy/mariadb/
+
+# 3. Secrets OpenFaaS
+export MARIADB_PASSWORD="…"
+export ENCRYPTION_KEY="$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')"
+bash deploy/openfaas-secrets.example.sh
+
+# 4. Build + push + deploy des 3 fonctions
+faas-cli up -f stack.yml
+```
+
+→ Détails (variantes cloud, baremetal, troubleshooting) : [`docs/deployment.md`](docs/deployment.md).
+
+## Tests
+
+```bash
+pytest                        # 36 tests (30 unitaires + 6 intégration)
+pytest -m unit                # unitaires seulement (pas de Docker requis)
+pytest -m integration         # intégration seulement (nécessite docker compose up -d)
+pytest --cov=functions        # avec couverture
+```
+
+→ Stratégie complète : [`docs/testing.md`](docs/testing.md).
+
+## CI/CD
+
+Deux workflows GitHub Actions :
+
+- [`ci.yml`](.github/workflows/ci.yml) — sur PR et push `main` : `ruff` + `pytest` (avec service MariaDB) + build des 3 images Docker.
+- [`release.yml`](.github/workflows/release.yml) — sur tag `v*.*.*` : rejoue le CI puis **build multi-arch (amd64/arm64) + push sur GHCR** des 3 fonctions, avec SBOM et attestation de provenance.
+
+Le déploiement reste manuel (`faas-cli up`) — choix volontaire pour le PoC.
+
+## Structure du dépôt
+
+```
+.
+├── CLAUDE.md                       # Contexte projet pour Claude Code
+├── README.md                       # ← vous êtes ici
+├── pyproject.toml                  # Config ruff + pytest
+├── requirements-dev.txt            # Dépendances dev (pytest, ruff, etc.)
+├── stack.yml                       # Manifeste OpenFaaS (les 3 fonctions)
+├── docker-compose.yml              # MariaDB pour dev local
+├── .env.example
+├── functions/
+│   ├── generate-password/          # FastAPI + Dockerfile of-watchdog
+│   ├── generate-2fa/
+│   └── authenticate-user/
+├── deploy/
+│   ├── init.sql                    # Schéma initial
+│   ├── openfaas-secrets.example.sh
+│   └── mariadb/                    # Manifestes Kubernetes
+├── tests/
+│   ├── unit/                       # Tests unitaires (BDD mockée)
+│   └── integration/                # Tests d'intégration (vraie MariaDB)
+├── bruno/                          # Collection API prête à l'emploi
+├── docs/                           # Documentation détaillée + openapi.yaml
+├── scripts/                        # Outils dev (generate-openapi.py)
+└── .github/workflows/              # CI + Release
+```
+
+## Documentation
+
+| Document                                                | Contenu                                                          |
+|---------------------------------------------------------|------------------------------------------------------------------|
+| [`docs/architecture.md`](docs/architecture.md)          | Vue d'ensemble, choix techniques, flux end-to-end                |
+| [`docs/api.md`](docs/api.md)                            | Référence API : payloads, codes erreur, exemples curl            |
+| [`docs/deployment.md`](docs/deployment.md)              | Procédure complète Kubernetes + OpenFaaS + MariaDB               |
+| [`docs/security.md`](docs/security.md)                  | Modèle de menace, chiffrement, rotation, secrets                 |
+| [`docs/development.md`](docs/development.md)            | Setup local, conventions, cycle de dev                           |
+| [`docs/testing.md`](docs/testing.md)                    | Stratégie de tests, exécution, fixtures                          |
+| [`docs/troubleshooting.md`](docs/troubleshooting.md)    | Erreurs fréquentes et résolutions                                |
+| [`docs/adr/`](docs/adr/)                                | Architecture Decision Records — choix structurants justifiés     |
+
+## Contribuer
+
+1. Fork + branche feature.
+2. `pip install -r requirements-dev.txt`, `docker compose up -d`.
+3. Code + `ruff check --fix . && ruff format .` + `pytest`.
+4. PR vers `main`. La CI rejoue lint + tests + build.
+
+Conventions de commit : style Conventional Commits encouragé (`feat:`, `fix:`, `docs:`, etc.) mais non bloquant pour ce PoC.
+
+## Licence
+
+[MIT](LICENSE) © 2026 COFRAP-EPSI-2026.
+
+---
+
+<div align="center">
+<sub>Réalisé dans le cadre de la MSPR TPRE912 — EPSI / Pro Alterna · Bloc 2 — Manager un projet informatique avec agilité.</sub>
+</div>
