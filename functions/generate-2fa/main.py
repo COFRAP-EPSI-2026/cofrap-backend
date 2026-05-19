@@ -18,7 +18,9 @@ app = FastAPI(
 
 
 class GenerateRequest(BaseModel):
-    username: str = Field(min_length=1, max_length=255, description="Identifiant utilisateur existant.")
+    username: str = Field(
+        min_length=1, max_length=255, description="Identifiant utilisateur existant."
+    )
 
 
 class GenerateResponse(BaseModel):

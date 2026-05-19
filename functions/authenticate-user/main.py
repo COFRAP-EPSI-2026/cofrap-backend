@@ -29,7 +29,9 @@ class AuthRequest(BaseModel):
 
 class AuthSuccessResponse(BaseModel):
     authenticated: bool = Field(description="`true` si toutes les vérifications passent.")
-    expired: bool = Field(description="`true` si le compte est expiré (>6 mois ou flag positionné).")
+    expired: bool = Field(
+        description="`true` si le compte est expiré (>6 mois ou flag positionné)."
+    )
     username: str | None = Field(
         default=None,
         description="Présent uniquement quand `authenticated == true`.",
