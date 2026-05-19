@@ -1,0 +1,41 @@
+
+✓ Stack COFRAP déployée dans le namespace `{{ .Release.Namespace }}`.
+
+Composants :
+  • MariaDB StatefulSet `{{ include "cofrap.fullname" . }}-mariadb`
+{{- range .Values.functions.list }}
+  • OpenFaaS Function `{{ . }}` → ns `{{ $.Values.openfaas.functionNamespace }}`
+{{- end }}
+
+----------------------------------------------------------------------
+Vérifier le déploiement
+----------------------------------------------------------------------
+
+    kubectl -n {{ .Release.Namespace }} get pods,svc,pvc
+    kubectl -n {{ .Values.openfaas.functionNamespace }} get functions.openfaas.com
+
+----------------------------------------------------------------------
+Tester les fonctions via le gateway OpenFaaS
+----------------------------------------------------------------------
+
+    # Port-forward du gateway (laisse tourner dans un autre terminal)
+    kubectl -n openfaas port-forward svc/gateway 8080:8080
+
+    # Health-check
+    curl -s {{ .Values.openfaas.gatewayURL }}/function/generate-password/healthz
+
+    # Génération d'un compte de test
+    curl -X POST {{ .Values.openfaas.gatewayURL }}/function/generate-password \
+         -H 'Content-Type: application/json' \
+         -d '{"username":"michel.ranu"}'
+
+----------------------------------------------------------------------
+Credentials OpenFaaS admin
+----------------------------------------------------------------------
+
+    PASSWORD=$(kubectl -n openfaas get secret basic-auth -o jsonpath='{.data.basic-auth-password}' | base64 -d)
+    echo "OpenFaaS admin password: $PASSWORD"
+
+----------------------------------------------------------------------
+Documentation : https://github.com/COFRAP-EPSI-2026/cofrap-backend/blob/main/docs/installation.md
+----------------------------------------------------------------------

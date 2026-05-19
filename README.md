@@ -103,25 +103,22 @@ uvicorn main:app --reload --port 5001
 
 → Tester via la [collection Bruno](bruno/) (`bruno/README.md`).
 
-## Déploiement OpenFaaS
+## Déploiement sur Kubernetes
+
+Stack complète (MariaDB + OpenFaaS + 3 fonctions) en **une commande** via un chart Helm dédié.
 
 ```bash
-# 1. OpenFaaS installé sur un cluster Kubernetes (K3S, minikube, GKE/AKS/EKS…)
-faas-cli login -g $OPENFAAS_URL -u admin --password-stdin <<< $OF_PASSWORD
+# Linux / macOS / WSL / Git Bash
+./scripts/install.sh
 
-# 2. MariaDB
-kubectl apply -f deploy/mariadb/
-
-# 3. Secrets OpenFaaS
-export MARIADB_PASSWORD="…"
-export ENCRYPTION_KEY="$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')"
-bash deploy/openfaas-secrets.example.sh
-
-# 4. Build + push + deploy des 3 fonctions
-faas-cli up -f stack.yml
+# Windows PowerShell
+./scripts/install.ps1
 ```
 
-→ Détails (variantes cloud, baremetal, troubleshooting) : [`docs/deployment.md`](docs/deployment.md).
+Le script vérifie les prérequis (`kubectl`, `helm`), installe OpenFaaS si absent, génère les secrets (clé Fernet + mots de passe MariaDB), puis déploie le chart [`deploy/helm/cofrap`](deploy/helm/cofrap).
+
+→ Guide détaillé (K3s, minikube Windows/Linux, cluster existant, désinstallation, troubleshooting) : [`docs/installation.md`](docs/installation.md).
+→ Pipeline CI/CD et build d'images : [`docs/deployment.md`](docs/deployment.md).
 
 ## Tests
 
@@ -159,15 +156,16 @@ Le déploiement reste manuel (`faas-cli up`) — choix volontaire pour le PoC.
 │   ├── generate-2fa/
 │   └── authenticate-user/
 ├── deploy/
+│   ├── helm/cofrap/                # Chart Helm (install one-shot)
+│   ├── mariadb/                    # Manifestes K8s bruts (alternative au chart)
 │   ├── init.sql                    # Schéma initial
-│   ├── openfaas-secrets.example.sh
-│   └── mariadb/                    # Manifestes Kubernetes
+│   └── openfaas-secrets.example.sh
 ├── tests/
 │   ├── unit/                       # Tests unitaires (BDD mockée)
 │   └── integration/                # Tests d'intégration (vraie MariaDB)
 ├── bruno/                          # Collection API prête à l'emploi
 ├── docs/                           # Documentation détaillée + openapi.yaml
-├── scripts/                        # Outils dev (generate-openapi.py)
+├── scripts/                        # install.sh / install.ps1 / generate-openapi.py
 └── .github/workflows/              # CI + Release
 ```
 
@@ -175,6 +173,7 @@ Le déploiement reste manuel (`faas-cli up`) — choix volontaire pour le PoC.
 
 | Document                                                | Contenu                                                          |
 |---------------------------------------------------------|------------------------------------------------------------------|
+| [`docs/installation.md`](docs/installation.md)          | Install pas-à-pas K3s / minikube / cluster existant, Windows + Linux |
 | [`docs/architecture.md`](docs/architecture.md)          | Vue d'ensemble, choix techniques, flux end-to-end                |
 | [`docs/api.md`](docs/api.md)                            | Référence API : payloads, codes erreur, exemples curl            |
 | [`docs/deployment.md`](docs/deployment.md)              | Procédure complète Kubernetes + OpenFaaS + MariaDB               |

@@ -1,0 +1,79 @@
+# Valeurs par défaut pour le chart `cofrap`.
+# Override via `helm install --set` ou `-f values-prod.yaml`.
+
+nameOverride: ""
+fullnameOverride: ""
+
+# -- Namespace OpenFaaS où vivent les fonctions et leurs secrets.
+# Doit matcher la valeur `functionNamespace` du chart `openfaas/openfaas`.
+openfaas:
+  functionNamespace: openfaas-fn
+  # URL informative, affichée dans NOTES.txt après install.
+  gatewayURL: "http://127.0.0.1:8080"
+
+# -- Secrets sensibles.
+# **Vide par défaut** : les scripts `install.sh` / `install.ps1` génèrent les valeurs
+# et les passent à Helm via `--set`. Tu peux aussi les fournir manuellement.
+secrets:
+  # Clé Fernet (32 bytes URL-safe base64) pour chiffrer password/mfa en BDD.
+  # Générer avec : python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+  encryptionKey: ""
+  # Mot de passe applicatif MariaDB (utilisateur `mariadb.user`).
+  mariadbPassword: ""
+  # Mot de passe root MariaDB (utilisé pour les opérations admin du StatefulSet).
+  mariadbRootPassword: ""
+
+# -- Configuration MariaDB.
+mariadb:
+  enabled: true
+  image:
+    repository: mariadb
+    tag: "11"
+    pullPolicy: IfNotPresent
+  database: cofrap
+  user: cofrap
+  service:
+    port: 3306
+    # `ClusterIP` (défaut) ou `None` pour headless service.
+    type: ClusterIP
+  persistence:
+    enabled: true
+    size: 2Gi
+    # Laisser vide pour utiliser la storageClass par défaut du cluster.
+    storageClassName: ""
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+# -- Fonctions OpenFaaS (créées comme CRD Function dans `openfaas.functionNamespace`).
+functions:
+  enabled: true
+  # Registry + tag des images. Override pour pointer vers ton propre fork.
+  registry: ghcr.io/cofrap-epsi-2026
+  version: "0.1.0"
+  pullPolicy: IfNotPresent
+
+  # Variables d'environnement passées à toutes les fonctions.
+  totpIssuer: COFRAP
+  expirySeconds: "15552000"  # 6 mois
+
+  # Timeouts of-watchdog.
+  timeouts:
+    read: 30s
+    write: 30s
+    exec: 30s
+
+  # Scaling OpenFaaS (Community : scale-to-zero après idle).
+  scale:
+    min: "1"
+    max: "5"
+
+  # Liste explicite des fonctions à déployer. Modifier ici si tu veux désactiver.
+  list:
+    - generate-password
+    - generate-2fa
+    - authenticate-user

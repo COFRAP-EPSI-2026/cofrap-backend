@@ -4,6 +4,7 @@ Documentation détaillée du PoC COFRAP backend. Le `README.md` à la racine est
 
 | Document                              | Pour qui ?                  | Quoi                                                              |
 |---------------------------------------|-----------------------------|-------------------------------------------------------------------|
+| [`installation.md`](installation.md)  | Ops, devs                   | Install pas-à-pas K3s / minikube / cluster existant (Windows + Linux) |
 | [`architecture.md`](architecture.md)  | Reviewer technique, jury    | Choix techniques, diagrammes, flux end-to-end                     |
 | [`api.md`](api.md)                    | Frontend, intégrateurs      | Référence des 3 fonctions : payloads, codes erreur, exemples curl |
 | [`openapi.yaml`](openapi.yaml)        | Intégrateurs, outils        | Contrat machine-lisible (OpenAPI 3.1) — généré depuis FastAPI     |

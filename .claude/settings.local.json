@@ -15,7 +15,14 @@
       "Bash(.venv/Scripts/python.exe -m ruff check --fix .)",
       "Bash(.venv/Scripts/python.exe -m ruff format .)",
       "Bash(.venv/Scripts/python.exe -m pip install --quiet pyyaml==6.0.2)",
-      "Bash(.venv/Scripts/python.exe scripts/generate-openapi.py)"
+      "Bash(.venv/Scripts/python.exe scripts/generate-openapi.py)",
+      "Bash(command -v helm)",
+      "Bash(helm version *)",
+      "Bash(helm lint *)",
+      "Bash(helm template *)",
+      "Bash(chmod +x scripts/install.sh scripts/uninstall.sh)",
+      "Bash(bash -n scripts/install.sh)",
+      "Bash(bash -n scripts/uninstall.sh)"
     ]
   }
 }

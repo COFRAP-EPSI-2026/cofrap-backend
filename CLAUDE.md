@@ -23,14 +23,17 @@ Architecture complète : [`docs/architecture.md`](docs/architecture.md). Justifi
 
 ```
 functions/<name>/      # 3 fonctions, chacune autonome (Dockerfile, main.py, db.py, crypto.py, qr.py)
-deploy/                # init.sql + manifestes K8s MariaDB + script secrets OpenFaaS
+deploy/
+  helm/cofrap/         # CHART HELM unique (MariaDB + secrets + Function CRDs) — voie principale
+  mariadb/             # manifestes K8s bruts (alternative kubectl apply)
+  init.sql, openfaas-secrets.example.sh
 tests/unit/            # pytest avec mock pymysql
 tests/integration/     # pytest avec MariaDB réelle (docker-compose / service GHA)
 bruno/                 # collection Bruno prête à l'emploi (envs + flux nominal + cas d'erreur)
-docs/                  # architecture, api, deployment, security, dev, testing, troubleshooting, ADR, openapi.yaml
-scripts/               # outils dev (generate-openapi.py)
+docs/                  # installation, architecture, api, deployment, security, dev, testing, troubleshooting, ADR, openapi.yaml
+scripts/               # install.sh / install.ps1 / uninstall.sh / uninstall.ps1 / generate-openapi.py
 .github/workflows/     # ci.yml (PR + push main) + release.yml (sur tag v*)
-stack.yml              # manifeste OpenFaaS racine
+stack.yml              # manifeste OpenFaaS (alternative au chart, pour `faas-cli up`)
 docker-compose.yml     # MariaDB pour dev local
 pyproject.toml         # ruff + pytest config (line-length 100, target py312)
 requirements-dev.txt   # pytest, ruff, pyyaml, deps applicatives pour pouvoir lancer les tests
@@ -81,6 +84,16 @@ faas-cli invoke generate-password                   # test d'invocation
 faas-cli secret list
 ```
 
+### Déploiement complet (chart Helm)
+
+```bash
+./scripts/install.sh             # Linux / WSL / Git Bash
+./scripts/install.ps1            # Windows PowerShell
+./scripts/uninstall.sh           # nettoyage
+```
+
+Voir [`docs/installation.md`](docs/installation.md) pour les variantes K3s / minikube / cluster existant. Le chart vit dans [`deploy/helm/cofrap/`](deploy/helm/cofrap/). Pour valider sans appliquer : `helm lint deploy/helm/cofrap && helm template cofrap deploy/helm/cofrap --set secrets.encryptionKey=x --set secrets.mariadbPassword=x --set secrets.mariadbRootPassword=x`.
+
 ### API spec (OpenAPI)
 
 ```bash
@@ -108,6 +121,7 @@ python scripts/generate-openapi.py    # → docs/openapi.yaml
 - **`pyproject.toml`** : la ligne `line-length` est à **100**, pas 88 (défaut ruff). Penser à `ruff format` avant de commit.
 - **Markers pytest stricts** : tout test doit être annoté `pytestmark = pytest.mark.unit` ou `integration` (le strict est activé dans `pyproject.toml`).
 - **Bruno : URL par fonction** : les requêtes utilisent `{{generate_password_url}}` / `{{generate_2fa_url}}` / `{{authenticate_user_url}}` (pas un seul `{{gateway}}`). Cela permet de switcher entre mode direct uvicorn (3 ports) et mode OpenFaaS gateway (1 URL avec `/function/<name>`) en changeant juste d'environnement.
+- **Chart Helm = source de vérité du déploiement** : si tu modifies un manifeste K8s (image registry, secrets attendus par les fonctions, schéma BDD, etc.), modifie dans `deploy/helm/cofrap/templates/` en priorité. Les manifestes bruts dans `deploy/mariadb/` sont une alternative pédagogique conservée pour la lecture — ils peuvent diverger sans casser la CI.
 
 ## CI/CD
 

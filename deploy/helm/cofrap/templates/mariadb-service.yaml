@@ -1,0 +1,23 @@
+{{- if .Values.mariadb.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "cofrap.fullname" . }}-mariadb
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "cofrap.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mariadb
+spec:
+  type: {{ .Values.mariadb.service.type }}
+  {{- if eq .Values.mariadb.service.type "ClusterIP" }}
+  clusterIP: None  # Headless — pour StatefulSet
+  {{- end }}
+  ports:
+    - name: mysql
+      port: {{ .Values.mariadb.service.port }}
+      targetPort: mysql
+  selector:
+    app.kubernetes.io/name: {{ include "cofrap.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: mariadb
+{{- end }}

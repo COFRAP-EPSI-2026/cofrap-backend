@@ -1,0 +1,45 @@
+{{/*
+Une CRD `Function` (openfaas.com/v1) par fonction, dans le namespace `openfaas-fn`.
+
+Variables d'env partagées : DB_HOST, DB_PORT, DB_NAME, DB_USER + timeouts of-watchdog.
+Spécifiques :
+  - generate-2fa  → TOTP_ISSUER
+  - authenticate-user → EXPIRY_SECONDS
+*/}}
+{{- if .Values.functions.enabled }}
+{{- $root := . -}}
+{{- $dbHost := printf "%s-mariadb.%s.svc.cluster.local" (include "cofrap.fullname" .) .Release.Namespace -}}
+{{- range .Values.functions.list }}
+---
+apiVersion: openfaas.com/v1
+kind: Function
+metadata:
+  name: {{ . }}
+  namespace: {{ $root.Values.openfaas.functionNamespace }}
+  labels:
+    {{- include "cofrap.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: function
+    com.openfaas.scale.min: {{ $root.Values.functions.scale.min | quote }}
+    com.openfaas.scale.max: {{ $root.Values.functions.scale.max | quote }}
+spec:
+  name: {{ . }}
+  image: "{{ $root.Values.functions.registry }}/{{ . }}:{{ $root.Values.functions.version }}"
+  secrets:
+    - mariadb-password
+    - encryption-key
+  environment:
+    DB_HOST: {{ $dbHost | quote }}
+    DB_PORT: {{ $root.Values.mariadb.service.port | quote }}
+    DB_NAME: {{ $root.Values.mariadb.database | quote }}
+    DB_USER: {{ $root.Values.mariadb.user | quote }}
+    read_timeout: {{ $root.Values.functions.timeouts.read | quote }}
+    write_timeout: {{ $root.Values.functions.timeouts.write | quote }}
+    exec_timeout: {{ $root.Values.functions.timeouts.exec | quote }}
+    {{- if eq . "generate-2fa" }}
+    TOTP_ISSUER: {{ $root.Values.functions.totpIssuer | quote }}
+    {{- end }}
+    {{- if eq . "authenticate-user" }}
+    EXPIRY_SECONDS: {{ $root.Values.functions.expirySeconds | quote }}
+    {{- end }}
+{{- end }}
+{{- end }}

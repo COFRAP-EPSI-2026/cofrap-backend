@@ -1,5 +1,7 @@
 # Déploiement
 
+> **Quickstart** : la procédure recommandée (un script qui orchestre OpenFaaS + chart Helm `cofrap`) vit dans [`installation.md`](installation.md). Ce document-ci détaille les étapes manuelles pour les cas où tu veux comprendre / personnaliser / dépanner ce que fait le script.
+
 ## Pré-requis
 
 - Cluster Kubernetes (K3S, minikube, KinD ou cloud GKE/AKS/EKS/Kapsule)
@@ -21,9 +23,34 @@ PASSWORD=$(kubectl -n openfaas get secret basic-auth -o jsonpath='{.data.basic-a
 kubectl port-forward -n openfaas svc/gateway 8080:8080 & echo "$PASSWORD" | faas-cli login -u admin --password-stdin
 ```
 
-## 2. Déployer MariaDB
+## 2. Déployer la stack (recommandé : chart Helm)
 
-Les manifestes vivent dans [`deploy/mariadb/`](../deploy/mariadb/) :
+Un seul chart Helm — [`deploy/helm/cofrap`](../deploy/helm/cofrap) — déploie MariaDB, crée les secrets OpenFaaS dans `openfaas-fn` et les 3 CRD `Function`. Procédure complète : [`installation.md`](installation.md).
+
+```bash
+ENCRYPTION_KEY="$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')"
+MARIADB_PASSWORD="$(openssl rand -hex 16)"
+MARIADB_ROOT_PASSWORD="$(openssl rand -hex 16)"
+
+helm upgrade --install cofrap deploy/helm/cofrap \
+  --namespace cofrap --create-namespace \
+  --set secrets.encryptionKey="$ENCRYPTION_KEY" \
+  --set secrets.mariadbPassword="$MARIADB_PASSWORD" \
+  --set secrets.mariadbRootPassword="$MARIADB_ROOT_PASSWORD" \
+  --wait
+```
+
+Vérification :
+
+```bash
+kubectl -n cofrap get pods,svc,pvc
+kubectl -n openfaas-fn get functions.openfaas.com
+curl -s http://127.0.0.1:8080/function/generate-password/healthz   # après port-forward
+```
+
+## 2bis. Alternative : déploiement manuel sans Helm
+
+Si tu préfères `kubectl apply` direct (ou si tu n'as pas Helm), les manifestes bruts existent dans [`deploy/mariadb/`](../deploy/mariadb/) :
 
 ```bash
 kubectl apply -f deploy/mariadb/namespace.yaml
@@ -32,48 +59,17 @@ kubectl apply -f deploy/mariadb/secret.yaml
 kubectl apply -f deploy/mariadb/configmap-init.yaml
 kubectl apply -f deploy/mariadb/service.yaml
 kubectl apply -f deploy/mariadb/statefulset.yaml
-
-# Vérifier
-kubectl -n cofrap get pods,svc,pvc
-kubectl -n cofrap exec -it mariadb-0 -- mariadb -ucofrap -p cofrap -e "SHOW TABLES;"
 ```
 
-La table `users` est créée automatiquement par le `ConfigMap` `mariadb-init` (entrypoint MariaDB).
-
-## 3. Créer les secrets OpenFaaS
-
-Deux secrets sont attendus par les 3 fonctions :
+Puis créer les secrets OpenFaaS et déployer les fonctions via `faas-cli` :
 
 ```bash
-export MARIADB_PASSWORD="<le mdp défini dans secret.yaml côté MariaDB>"
-export ENCRYPTION_KEY="$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')"
-
-bash deploy/openfaas-secrets.example.sh
-# ou en direct :
 faas-cli secret create mariadb-password --from-literal "$MARIADB_PASSWORD"
 faas-cli secret create encryption-key   --from-literal "$ENCRYPTION_KEY"
-```
-
-> **Garder `ENCRYPTION_KEY` précieusement** : si elle est perdue, tous les mots de passe et secrets TOTP chiffrés en BDD deviennent illisibles. Sauvegarder dans un vault (Vault, Doppler, AWS Secrets Manager, etc.).
-
-## 4. Déployer les fonctions
-
-```bash
-# Éditer stack.yml si nécessaire (préfixe d'image, gateway, DB_HOST)
 faas-cli up -f stack.yml
 ```
 
-Cela enchaîne build → push → deploy pour les 3 fonctions. Vérification :
-
-```bash
-faas-cli list
-# generate-password   1/1
-# generate-2fa        1/1
-# authenticate-user   1/1
-
-curl -s $OPENFAAS_URL/function/generate-password/healthz
-# {"status":"ok"}
-```
+> **Garder `ENCRYPTION_KEY` précieusement** : si elle est perdue, tous les mots de passe et secrets TOTP chiffrés en BDD deviennent illisibles. Sauvegarder dans un vault (Vault, Doppler, AWS Secrets Manager, etc.).
 
 ## Variantes de déploiement
 
