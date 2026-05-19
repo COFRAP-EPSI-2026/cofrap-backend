@@ -1,3 +1,6 @@
 vars:pre-request {
-  generate_password_url: http://localhost:8080
+  basic_url: http://localhost:8080
+  generate_password_url: {{basic_url}}/function/generate-password
+  generate_2fa_url: {{basic_url}}/function/generate-2fa
+  authenticate_user_url: {{basic_url}}/function/authenticate-user
 }

@@ -95,13 +95,14 @@ if ($SkipOpenFaaS) {
     kubectl create namespace $OpenFaaSNamespace --dry-run=client -o yaml | kubectl apply -f -
     kubectl create namespace $OpenFaaSFnNamespace --dry-run=client -o yaml | kubectl apply -f -
 
+    # NB : `operator.create=true` est réservé à OpenFaaS Pro depuis 2023.
+    # En Community, on déploie les fonctions comme Deployments + Services classiques
+    # labellisés `faas_function=<name>` — le gateway les découvre automatiquement.
     helm upgrade --install openfaas openfaas/openfaas `
         --namespace $OpenFaaSNamespace `
         --set "functionNamespace=$OpenFaaSFnNamespace" `
         --set "generateBasicAuth=true" `
         --set "basic_auth=true" `
-        --set "operator.create=true" `
-        --set "operator.createCRD=true" `
         --wait --timeout 5m
 
     if ($LASTEXITCODE -ne 0) { Write-Err "Échec install OpenFaaS"; exit 1 }

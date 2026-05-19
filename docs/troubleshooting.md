@@ -71,44 +71,53 @@ Et côté gateway OpenFaaS, vérifier `gateway.upstreamTimeout` (Helm value).
 
 ### Gateway répond `error finding function <name>.openfaas-fn` (404)
 
-OpenFaaS a été installé sans l'**operator** : il tourne en mode REST API et ignore les CRD `Function` créées par le chart `cofrap`.
+Les fonctions ne sont pas découvertes par le gateway. En OpenFaaS Community, la découverte se fait via des Deployments + Services dans `openfaas-fn` labellisés `faas_function=<name>`.
 
-Vérifier :
-
-```bash
-kubectl -n openfaas-fn get functions.openfaas.com
-# generate-password   1m       # le CRD existe
-kubectl -n openfaas-fn get deployments
-# (vide)                       # mais aucun deployment → controller absent
-kubectl -n openfaas get deployment gateway -o yaml | grep -i operator
-# Si rien → operator pas activé
-```
-
-Activer l'operator sur une install existante (sans tout recréer) :
+Vérifier la présence des ressources :
 
 ```bash
-helm upgrade openfaas openfaas/openfaas \
-  --namespace openfaas \
-  --reuse-values \
-  --set operator.create=true \
-  --set operator.createCRD=true \
-  --wait
+kubectl -n openfaas-fn get deploy,svc,pods -l 'faas_function'
+# Si vide → le chart cofrap n'a pas été (correctement) appliqué.
 ```
 
-Au bout de 10-20 s, les pods des fonctions apparaissent :
+Re-déployer le chart :
 
 ```bash
-kubectl -n openfaas-fn get pods
-# generate-password-xxxx-yyyy    1/1   Running
-# generate-2fa-xxxx-yyyy         1/1   Running
-# authenticate-user-xxxx-yyyy    1/1   Running
+./scripts/install.sh                     # Linux / WSL / Git Bash
+./scripts/install.ps1                    # Windows PowerShell
+
+# ou directement :
+helm upgrade --install cofrap deploy/helm/cofrap \
+  --namespace cofrap --reuse-values --wait
 ```
 
-Le path correct du healthcheck est `/healthz` (pas `/health`) :
+Une fois les pods `Running`, le gateway les liste automatiquement :
+
+```bash
+PASSWORD=$(kubectl -n openfaas get secret basic-auth -o jsonpath='{.data.basic-auth-password}' | base64 -d)
+curl -s -u admin:$PASSWORD http://127.0.0.1:8080/system/functions | jq '.[].name'
+# "generate-password"
+# "generate-2fa"
+# "authenticate-user"
+```
+
+> **Path du healthcheck** : c'est `/healthz` (avec `z`, défini côté FastAPI), pas `/health`. Et le mount path of-watchdog interne `/_/health` est exposé en interne pour les probes K8s, pas via le gateway.
 
 ```bash
 curl -s http://127.0.0.1:8080/function/generate-password/healthz
 # {"status":"ok"}
+```
+
+### Erreur Helm `enabling 'operator.create' is only supported for OpenFaaS Pro`
+
+L'option `operator.create=true` du chart `openfaas/openfaas` est réservée à la version Pro. **Ne pas la passer en Community.**
+
+Le chart `cofrap` ne dépend pas de l'operator — il déploie les fonctions comme des Deployments K8s classiques avec le label `faas_function=<name>`, mécanisme natif du gateway Community.
+
+Si un précédent `helm upgrade ... --set operator.create=true` a échoué, l'install OpenFaaS précédente est intacte. Pour réinstaller proprement les fonctions, il suffit de relancer le script :
+
+```bash
+./scripts/install.sh -SkipOpenFaaS    # Windows: ./scripts/install.ps1 -SkipOpenFaaS
 ```
 
 ### `pymysql.err.OperationalError: (2003, "Can't connect to MySQL server")`

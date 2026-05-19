@@ -1,45 +1,135 @@
 {{/*
-Une CRD `Function` (openfaas.com/v1) par fonction, dans le namespace `openfaas-fn`.
+Pour chaque fonction, on crée un Deployment + un Service dans `openfaas.functionNamespace`.
 
-Variables d'env partagées : DB_HOST, DB_PORT, DB_NAME, DB_USER + timeouts of-watchdog.
-Spécifiques :
-  - generate-2fa  → TOTP_ISSUER
-  - authenticate-user → EXPIRY_SECONDS
+OpenFaaS Community (chart `openfaas/openfaas` sans operator Pro) découvre
+automatiquement les fonctions via le label `faas_function: <name>` sur le Service.
+Le gateway les rend invocables sur /function/<name>.
+
+Note : on n'utilise pas la CRD `openfaas.com/v1` Function qui exige OpenFaaS Pro
+(option `operator.create=true` dans le chart).
 */}}
 {{- if .Values.functions.enabled }}
 {{- $root := . -}}
 {{- $dbHost := printf "%s-mariadb.%s.svc.cluster.local" (include "cofrap.fullname" .) .Release.Namespace -}}
 {{- range .Values.functions.list }}
 ---
-apiVersion: openfaas.com/v1
-kind: Function
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: {{ . }}
   namespace: {{ $root.Values.openfaas.functionNamespace }}
   labels:
     {{- include "cofrap.labels" $root | nindent 4 }}
     app.kubernetes.io/component: function
+    faas_function: {{ . }}
     com.openfaas.scale.min: {{ $root.Values.functions.scale.min | quote }}
     com.openfaas.scale.max: {{ $root.Values.functions.scale.max | quote }}
+  annotations:
+    prometheus.io.scrape: "false"
 spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      faas_function: {{ . }}
+  template:
+    metadata:
+      labels:
+        faas_function: {{ . }}
+        app: {{ . }}
+      annotations:
+        prometheus.io.scrape: "false"
+    spec:
+      containers:
+        - name: {{ . }}
+          image: "{{ $root.Values.functions.registry }}/{{ . }}:{{ $root.Values.functions.version }}"
+          imagePullPolicy: {{ $root.Values.functions.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: DB_HOST
+              value: {{ $dbHost | quote }}
+            - name: DB_PORT
+              value: {{ $root.Values.mariadb.service.port | quote }}
+            - name: DB_NAME
+              value: {{ $root.Values.mariadb.database | quote }}
+            - name: DB_USER
+              value: {{ $root.Values.mariadb.user | quote }}
+            - name: read_timeout
+              value: {{ $root.Values.functions.timeouts.read | quote }}
+            - name: write_timeout
+              value: {{ $root.Values.functions.timeouts.write | quote }}
+            - name: exec_timeout
+              value: {{ $root.Values.functions.timeouts.exec | quote }}
+            {{- if eq . "generate-2fa" }}
+            - name: TOTP_ISSUER
+              value: {{ $root.Values.functions.totpIssuer | quote }}
+            {{- end }}
+            {{- if eq . "authenticate-user" }}
+            - name: EXPIRY_SECONDS
+              value: {{ $root.Values.functions.expirySeconds | quote }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /_/health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /_/health
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true
+          volumeMounts:
+            - name: mariadb-password
+              mountPath: /var/openfaas/secrets/mariadb-password
+              subPath: mariadb-password
+              readOnly: true
+            - name: encryption-key
+              mountPath: /var/openfaas/secrets/encryption-key
+              subPath: encryption-key
+              readOnly: true
+      volumes:
+        - name: mariadb-password
+          secret:
+            secretName: mariadb-password
+            items:
+              - key: mariadb-password
+                path: mariadb-password
+        - name: encryption-key
+          secret:
+            secretName: encryption-key
+            items:
+              - key: encryption-key
+                path: encryption-key
+---
+apiVersion: v1
+kind: Service
+metadata:
   name: {{ . }}
-  image: "{{ $root.Values.functions.registry }}/{{ . }}:{{ $root.Values.functions.version }}"
-  secrets:
-    - mariadb-password
-    - encryption-key
-  environment:
-    DB_HOST: {{ $dbHost | quote }}
-    DB_PORT: {{ $root.Values.mariadb.service.port | quote }}
-    DB_NAME: {{ $root.Values.mariadb.database | quote }}
-    DB_USER: {{ $root.Values.mariadb.user | quote }}
-    read_timeout: {{ $root.Values.functions.timeouts.read | quote }}
-    write_timeout: {{ $root.Values.functions.timeouts.write | quote }}
-    exec_timeout: {{ $root.Values.functions.timeouts.exec | quote }}
-    {{- if eq . "generate-2fa" }}
-    TOTP_ISSUER: {{ $root.Values.functions.totpIssuer | quote }}
-    {{- end }}
-    {{- if eq . "authenticate-user" }}
-    EXPIRY_SECONDS: {{ $root.Values.functions.expirySeconds | quote }}
-    {{- end }}
+  namespace: {{ $root.Values.openfaas.functionNamespace }}
+  labels:
+    {{- include "cofrap.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: function
+    faas_function: {{ . }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      protocol: TCP
+      targetPort: http
+  selector:
+    faas_function: {{ . }}
 {{- end }}
 {{- end }}

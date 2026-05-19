@@ -169,15 +169,16 @@ helm upgrade --install cofrap deploy/helm/cofrap \
 # Pods cofrap (MariaDB)
 kubectl -n cofrap get pods,svc,pvc
 
-# Fonctions OpenFaaS
-kubectl -n openfaas-fn get functions.openfaas.com
-# NAME                AGE
-# generate-password   1m
-# generate-2fa        1m
-# authenticate-user   1m
+# Fonctions OpenFaaS — Deployments + Services labellisés `faas_function`
+kubectl -n openfaas-fn get deploy,svc -l 'faas_function'
+kubectl -n openfaas-fn get pods -l 'faas_function'
+# NAME                                READY   STATUS    RESTARTS   AGE
+# generate-password-xxxx-yyyy         1/1     Running   0          1m
+# generate-2fa-xxxx-yyyy              1/1     Running   0          1m
+# authenticate-user-xxxx-yyyy         1/1     Running   0          1m
 
-# Pods des fonctions (créés par le controller OpenFaaS)
-kubectl -n openfaas-fn get pods
+# Le gateway les voit aussi
+curl -s -u admin:$OF_PASS http://127.0.0.1:8080/system/functions | jq '.[].name'
 ```
 
 État attendu : un pod MariaDB `Running` + un pod par fonction `Running`.
@@ -251,12 +252,10 @@ helm upgrade --install openfaas openfaas/openfaas \
   --namespace openfaas \
   --set functionNamespace=openfaas-fn \
   --set generateBasicAuth=true \
-  --set operator.create=true \
-  --set operator.createCRD=true \
   --wait --timeout 5m
 ```
 
-> ⚠️ **`operator.create=true` est obligatoire**. Sans lui, le chart OpenFaaS tourne en mode REST API : les fonctions sont attendues via `faas-cli deploy` (qui crée des Deployments directement). Avec `operator.create=true`, OpenFaaS surveille les ressources `Function` (`openfaas.com/v1`) que notre chart `cofrap` crée. Sans cette option, le gateway répondrait `error finding function <name>.openfaas-fn` (404).
+> ℹ️ **Pourquoi pas `operator.create=true` ?** Cette option est réservée à OpenFaaS Pro depuis 2023 (le chart refuse l'install avec `enabling 'operator.create' is only supported for OpenFaaS Pro`). En Community, le chart `cofrap` déploie les fonctions comme des **Deployments + Services Kubernetes classiques** labellisés `faas_function=<name>` — le gateway Community les découvre automatiquement.
 
 ### 2. Génération des secrets
 
@@ -279,7 +278,7 @@ helm upgrade --install cofrap deploy/helm/cofrap \
 
 Le chart crée :
 - Dans `cofrap` : Secret + ConfigMap + Service + StatefulSet pour MariaDB.
-- Dans `openfaas-fn` : Secrets `mariadb-password` et `encryption-key` (utilisés par les fonctions), CRDs `Function` pour les 3 fonctions.
+- Dans `openfaas-fn` : Secrets `mariadb-password` et `encryption-key` (utilisés par les fonctions), puis 1 Deployment + 1 Service par fonction (avec label `faas_function=<name>` pour la découverte par le gateway).
 
 ### 4. Préview / debug
 
@@ -308,6 +307,7 @@ Quelques pointeurs rapides :
 |-------------------------------------------------------|-------------------------------------------------------------|
 | PVC MariaDB en `Pending`                              | Le cluster n'a pas de storageClass par défaut. Voir [`troubleshooting.md`](troubleshooting.md). |
 | Fonctions en `ErrImagePull`                           | Les images n'existent pas sur le registry indiqué. `--set functions.registry=...` |
-| Gateway répond `error finding function <name>.openfaas-fn` (404) | OpenFaaS a été installé sans l'operator (`operator.create=true`). Rattraper avec `helm upgrade openfaas openfaas/openfaas -n openfaas --reuse-values --set operator.create=true --set operator.createCRD=true --wait`, puis attendre que les pods des fonctions apparaissent. |
+| Gateway répond `error finding function <name>.openfaas-fn` (404) | Les fonctions ne sont pas (encore) déployées comme Deployments+Services labellisés. Réinstaller via `./scripts/install.sh` ou `helm upgrade --install cofrap deploy/helm/cofrap ...`. Vérifier : `kubectl -n openfaas-fn get deploy -l faas_function`. |
+| Erreur Helm `enabling 'operator.create' is only supported for OpenFaaS Pro` | C'est attendu — `operator.create` exige OpenFaaS Pro. Le chart `cofrap` utilise des Deployments classiques et ne nécessite PAS l'operator. Ne pas passer ce flag à `openfaas/openfaas`. |
 | `secrets.encryptionKey est obligatoire`               | Lancer via le script ou passer les 3 `--set secrets.*` à la main. |
 | Gateway OpenFaaS inaccessible en port-forward         | Vérifier que le pod `gateway` est `Running` dans `openfaas`. |
