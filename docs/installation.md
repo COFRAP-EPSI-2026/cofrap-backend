@@ -306,7 +306,7 @@ Quelques pointeurs rapides :
 | Symptôme                                              | Solution                                                    |
 |-------------------------------------------------------|-------------------------------------------------------------|
 | PVC MariaDB en `Pending`                              | Le cluster n'a pas de storageClass par défaut. Voir [`troubleshooting.md`](troubleshooting.md). |
-| Fonctions en `ErrImagePull`                           | Les images n'existent pas sur le registry indiqué. `--set functions.registry=...` |
+| Fonctions en `ErrImagePull` / `ImagePullBackOff`      | Les images n'existent pas sur GHCR (aucun tag git poussé). Builder localement avec [`./scripts/build-images.sh`](../scripts/build-images.sh) (ou `.ps1` sur Windows), puis `helm upgrade --reuse-values --set functions.pullPolicy=IfNotPresent` + `kubectl -n openfaas-fn rollout restart deployment -l faas_function`. |
 | Gateway répond `error finding function <name>.openfaas-fn` (404) | Les fonctions ne sont pas (encore) déployées comme Deployments+Services labellisés. Réinstaller via `./scripts/install.sh` ou `helm upgrade --install cofrap deploy/helm/cofrap ...`. Vérifier : `kubectl -n openfaas-fn get deploy -l faas_function`. |
 | Erreur Helm `enabling 'operator.create' is only supported for OpenFaaS Pro` | C'est attendu — `operator.create` exige OpenFaaS Pro. Le chart `cofrap` utilise des Deployments classiques et ne nécessite PAS l'operator. Ne pas passer ce flag à `openfaas/openfaas`. |
 | `secrets.encryptionKey est obligatoire`               | Lancer via le script ou passer les 3 `--set secrets.*` à la main. |

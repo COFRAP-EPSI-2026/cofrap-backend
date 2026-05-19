@@ -22,7 +22,9 @@
       "Bash(helm template *)",
       "Bash(chmod +x scripts/install.sh scripts/uninstall.sh)",
       "Bash(bash -n scripts/install.sh)",
-      "Bash(bash -n scripts/uninstall.sh)"
+      "Bash(bash -n scripts/uninstall.sh)",
+      "Bash(chmod +x scripts/build-images.sh)",
+      "Bash(bash -n scripts/build-images.sh)"
     ]
   }
 }

@@ -45,6 +45,39 @@ L'image Python `slim` + dépendances pèse ~150 Mo. Pour aller plus loin : passe
 
 ## Déploiement Kubernetes
 
+### Fonctions en `ErrImagePull` / `ImagePullBackOff`
+
+Les images `ghcr.io/cofrap-epsi-2026/<function>:0.1.0` ne sont publiées que sur **tag git `v*.*.*`** (via le workflow [`release.yml`](../.github/workflows/release.yml)). Sur un fork ou avant de pousser un tag, ces images n'existent pas → ImagePullBackOff au démarrage des pods.
+
+Builder localement et charger dans le cluster :
+
+```bash
+# Linux / WSL / Git Bash
+./scripts/build-images.sh
+
+# Windows PowerShell
+./scripts/build-images.ps1
+```
+
+Le script auto-détecte minikube / K3s / K3d / KinD et utilise le bon mécanisme (`docker-env` pour minikube, `k3s ctr images import` pour K3s, `kind load`, etc.).
+
+Puis appliquer la nouvelle image policy :
+
+```bash
+helm upgrade cofrap ./deploy/helm/cofrap -n cofrap --reuse-values \
+  --set functions.pullPolicy=IfNotPresent
+kubectl -n openfaas-fn rollout restart deployment -l 'faas_function'
+```
+
+Pour un cluster distant, push sur ton propre registry :
+
+```bash
+REGISTRY=ghcr.io/mon-org PUSH=1 ./scripts/build-images.sh
+# puis
+helm upgrade cofrap ./deploy/helm/cofrap -n cofrap --reuse-values \
+  --set functions.registry=ghcr.io/mon-org
+```
+
 ### Le pod MariaDB reste en `Pending`
 
 Probable problème de `StorageClass`. Sur un cluster custom :
