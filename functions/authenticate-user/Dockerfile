@@ -4,7 +4,7 @@ FROM python:3.12-slim
 COPY --from=watchdog /fwatchdog /usr/bin/fwatchdog
 RUN chmod +x /usr/bin/fwatchdog
 
-RUN addgroup --system app && adduser --system --ingroup app app
+RUN addgroup --system --gid 10001 app && adduser --system --ingroup app --uid 10001 app
 
 WORKDIR /home/app
 
@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY main.py db.py crypto.py ./
 RUN chown -R app:app /home/app
 
-USER app
+USER 10001
 
 ENV fprocess="uvicorn main:app --host 127.0.0.1 --port 5000"
 ENV upstream_url="http://127.0.0.1:5000"
