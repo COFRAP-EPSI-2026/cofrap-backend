@@ -1,6 +1,60 @@
+meta {
+  name: COFRAP Backend
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
 vars:pre-request {
+  username: michel.ranu
   basic_url: http://localhost:8080
   generate_password_url: {{basic_url}}/function/generate-password
   generate_2fa_url: {{basic_url}}/function/generate-2fa
   authenticate_user_url: {{basic_url}}/function/authenticate-user
+}
+
+docs {
+  # COFRAP Backend — Collection Bruno
+
+  Trois fonctions OpenFaaS du PoC :
+
+  - `generate-password` — mot de passe 24 caractères + QR code
+  - `generate-2fa` — secret TOTP + QR `otpauth://`
+  - `authenticate-user` — credentials + TOTP, contrôle expiration 6 mois
+
+  ## URLs
+
+  La collection définit `basic_url = http://localhost:8080` par défaut (gateway OpenFaaS local port-forwardé) et en dérive les 3 URLs `{{generate_password_url}}` / `{{generate_2fa_url}}` / `{{authenticate_user_url}}`.
+
+  **Les environnements écrasent ces valeurs** :
+
+  - **Local Direct (uvicorn)** — chaque fonction sur son propre port (5001/5002/5003), sans préfixe `/function/<name>`. Sélectionner cet env si tu lances `uvicorn main:app --port 500X` en local.
+  - **Local OpenFaaS Gateway** — gateway `127.0.0.1:8080` avec `/function/<name>`. Identique au défaut du collection.bru.
+  - **Cluster** — URL d'un cluster déployé (à éditer dans `environments/Cluster.bru`).
+
+  ## Variables
+
+  | Variable                  | Type    | Set par                                                  |
+  |---------------------------|---------|----------------------------------------------------------|
+  | `basic_url`               | runtime | défaut `http://localhost:8080`                           |
+  | `generate_password_url`   | runtime | dérivée de `basic_url` (sauf si env override)            |
+  | `generate_2fa_url`        | runtime | dérivée de `basic_url`                                   |
+  | `authenticate_user_url`   | runtime | dérivée de `basic_url`                                   |
+  | `username`                | runtime | défaut `michel.ranu`                                     |
+  | `gendate`                 | env     | rempli par `Generate password` / `Generate 2FA` (post-response) |
+  | `totp_secret`             | env     | rempli par `Generate 2FA` (extrait de l'URI otpauth)     |
+  | `otp`                     | runtime | calculé par `Authenticate (auto TOTP)` (pre-request)     |
+  | `password`                | env     | **manuel** — à coller après scan du QR                   |
+
+  ## Flux nominal
+
+  1. `00 Health/*` — sanity check des 3 fonctions.
+  2. `01 Onboarding/1. Generate password` — crée le compte, scanner le QR, coller le mot de passe dans la var `password` de l'environnement.
+  3. `01 Onboarding/2. Generate 2FA` — `totp_secret` extrait automatiquement.
+  4. `02 Authentication/Authenticate (auto TOTP)` — devrait renvoyer `authenticated: true`.
+
+  Le dossier `02 Authentication/` couvre les cas d'erreur (mauvais mot de passe, mauvais OTP, utilisateur inconnu, compte expiré).
+  Le dossier `03 Validation/` couvre les erreurs Pydantic (username vide, OTP malformé, etc.).
 }
