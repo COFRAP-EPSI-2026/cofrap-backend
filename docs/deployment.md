@@ -10,17 +10,15 @@
 ## 1. Installer OpenFaaS Community
 
 ```bash
-arkade install openfaas
-# OU via Helm :
-# helm repo add openfaas https://openfaas.github.io/faas-netes/
-# kubectl create namespace openfaas
-# kubectl create namespace openfaas-fn
-# helm install openfaas openfaas/openfaas --namespace openfaas --set functionNamespace=openfaas-fn
+# via Helm :
+helm repo add openfaas https://openfaas.github.io/faas-netes/
+kubectl create namespace openfaas
+kubectl create namespace openfaas-fn
+helm install openfaas openfaas/openfaas --namespace openfaas --set functionNamespace=openfaas-fn
 
 # Récupérer le mot de passe admin et logger faas-cli
 PASSWORD=$(kubectl -n openfaas get secret basic-auth -o jsonpath='{.data.basic-auth-password}' | base64 -d)
-kubectl port-forward -n openfaas svc/gateway 8080:8080 &
-echo "$PASSWORD" | faas-cli login -u admin --password-stdin
+kubectl port-forward -n openfaas svc/gateway 8080:8080 & echo "$PASSWORD" | faas-cli login -u admin --password-stdin
 ```
 
 ## 2. Déployer MariaDB
