@@ -69,6 +69,48 @@ environment:
 
 Et côté gateway OpenFaaS, vérifier `gateway.upstreamTimeout` (Helm value).
 
+### Gateway répond `error finding function <name>.openfaas-fn` (404)
+
+OpenFaaS a été installé sans l'**operator** : il tourne en mode REST API et ignore les CRD `Function` créées par le chart `cofrap`.
+
+Vérifier :
+
+```bash
+kubectl -n openfaas-fn get functions.openfaas.com
+# generate-password   1m       # le CRD existe
+kubectl -n openfaas-fn get deployments
+# (vide)                       # mais aucun deployment → controller absent
+kubectl -n openfaas get deployment gateway -o yaml | grep -i operator
+# Si rien → operator pas activé
+```
+
+Activer l'operator sur une install existante (sans tout recréer) :
+
+```bash
+helm upgrade openfaas openfaas/openfaas \
+  --namespace openfaas \
+  --reuse-values \
+  --set operator.create=true \
+  --set operator.createCRD=true \
+  --wait
+```
+
+Au bout de 10-20 s, les pods des fonctions apparaissent :
+
+```bash
+kubectl -n openfaas-fn get pods
+# generate-password-xxxx-yyyy    1/1   Running
+# generate-2fa-xxxx-yyyy         1/1   Running
+# authenticate-user-xxxx-yyyy    1/1   Running
+```
+
+Le path correct du healthcheck est `/healthz` (pas `/health`) :
+
+```bash
+curl -s http://127.0.0.1:8080/function/generate-password/healthz
+# {"status":"ok"}
+```
+
 ### `pymysql.err.OperationalError: (2003, "Can't connect to MySQL server")`
 
 Le DNS interne du cluster n'est pas joignable depuis le namespace `openfaas-fn`. Vérifier :

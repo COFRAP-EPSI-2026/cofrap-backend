@@ -78,6 +78,8 @@ else
     --set functionNamespace="$OPENFAAS_FN_NAMESPACE" \
     --set generateBasicAuth=true \
     --set basic_auth=true \
+    --set operator.create=true \
+    --set operator.createCRD=true \
     --wait --timeout 5m
 
   green "OpenFaaS installé."

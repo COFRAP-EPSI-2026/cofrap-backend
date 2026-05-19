@@ -100,6 +100,8 @@ if ($SkipOpenFaaS) {
         --set "functionNamespace=$OpenFaaSFnNamespace" `
         --set "generateBasicAuth=true" `
         --set "basic_auth=true" `
+        --set "operator.create=true" `
+        --set "operator.createCRD=true" `
         --wait --timeout 5m
 
     if ($LASTEXITCODE -ne 0) { Write-Err "Échec install OpenFaaS"; exit 1 }

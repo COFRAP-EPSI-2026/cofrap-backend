@@ -251,8 +251,12 @@ helm upgrade --install openfaas openfaas/openfaas \
   --namespace openfaas \
   --set functionNamespace=openfaas-fn \
   --set generateBasicAuth=true \
+  --set operator.create=true \
+  --set operator.createCRD=true \
   --wait --timeout 5m
 ```
+
+> ⚠️ **`operator.create=true` est obligatoire**. Sans lui, le chart OpenFaaS tourne en mode REST API : les fonctions sont attendues via `faas-cli deploy` (qui crée des Deployments directement). Avec `operator.create=true`, OpenFaaS surveille les ressources `Function` (`openfaas.com/v1`) que notre chart `cofrap` crée. Sans cette option, le gateway répondrait `error finding function <name>.openfaas-fn` (404).
 
 ### 2. Génération des secrets
 
@@ -304,5 +308,6 @@ Quelques pointeurs rapides :
 |-------------------------------------------------------|-------------------------------------------------------------|
 | PVC MariaDB en `Pending`                              | Le cluster n'a pas de storageClass par défaut. Voir [`troubleshooting.md`](troubleshooting.md). |
 | Fonctions en `ErrImagePull`                           | Les images n'existent pas sur le registry indiqué. `--set functions.registry=...` |
+| Gateway répond `error finding function <name>.openfaas-fn` (404) | OpenFaaS a été installé sans l'operator (`operator.create=true`). Rattraper avec `helm upgrade openfaas openfaas/openfaas -n openfaas --reuse-values --set operator.create=true --set operator.createCRD=true --wait`, puis attendre que les pods des fonctions apparaissent. |
 | `secrets.encryptionKey est obligatoire`               | Lancer via le script ou passer les 3 `--set secrets.*` à la main. |
 | Gateway OpenFaaS inaccessible en port-forward         | Vérifier que le pod `gateway` est `Running` dans `openfaas`. |
