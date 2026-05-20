@@ -130,7 +130,7 @@ kubectl delete namespace cofrap --ignore-not-found
 
 ## Images des fonctions
 
-Le chart pointe par défaut sur `ghcr.io/cofrap-epsi-2026/<function>:2026.1.0`. Ces images n'existent qu'après un tag git `v2026.1.0` (workflow `release.yml`). Sur un fork ou sans release publiée, builder localement avec [`scripts/build-images.sh`](../../../scripts/build-images.sh) / `.ps1`, puis :
+Le chart pointe par défaut sur `ghcr.io/cofrap-epsi-2026/<function>:2026.1.1`. Ces images n'existent qu'après un tag git `v2026.1.1` (workflow `release.yml`). Sur un fork ou sans release publiée, builder localement avec [`scripts/build-images.sh`](../../../scripts/build-images.sh) / `.ps1`, puis :
 
 ```bash
 helm upgrade cofrap deploy/helm/cofrap -n cofrap --reuse-values \
@@ -145,7 +145,7 @@ Voir [`values.yaml`](values.yaml) — commenté. Les plus utiles :
 | Clé                          | Défaut                      | Description                                       |
 |------------------------------|-----------------------------|---------------------------------------------------|
 | `functions.registry`         | `ghcr.io/cofrap-epsi-2026`  | Préfixe registry pour les 3 images                |
-| `functions.version`          | `2026.1.0`                  | Tag des images                                    |
+| `functions.version`          | `2026.1.1`                  | Tag des images                                    |
 | `functions.pullPolicy`       | `IfNotPresent`              | Mettre `IfNotPresent` pour des images locales     |
 | `functions.totpIssuer`       | `COFRAP`                    | Issuer affiché dans Google Authenticator          |
 | `functions.expirySeconds`    | `15552000` (6 mois)         | Fenêtre de validité — réduire pour démo expiry    |

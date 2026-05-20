@@ -16,7 +16,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="${SCRIPT_DIR}/.."
 
 REGISTRY="${REGISTRY:-ghcr.io/cofrap-epsi-2026}"
-TAG="${TAG:-2026.1.0}"
+TAG="${TAG:-2026.1.1}"
 PUSH="${PUSH:-0}"
 CLUSTER_TYPE="${CLUSTER_TYPE:-auto}"
 

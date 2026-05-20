@@ -165,7 +165,7 @@ helm upgrade --install cofrap deploy/helm/cofrap \
 
 ## Building images locally (if no release is published)
 
-The chart points by default to `ghcr.io/cofrap-epsi-2026/<function>:2026.1.0`. Those images only exist **once a git tag `v2026.1.0` has been pushed** (the [`release.yml`](../../.github/workflows/release.yml) workflow builds and pushes them on that tag).
+The chart points by default to `ghcr.io/cofrap-epsi-2026/<function>:2026.1.1`. Those images only exist **once a git tag `v2026.1.1` has been pushed** (the [`release.yml`](../../.github/workflows/release.yml) workflow builds and pushes them on that tag).
 
 If you work on a fork or without having pushed a tag, you must build the images locally and make them available to the cluster. A script auto-detects your cluster type (minikube / K3s / K3d / KinD) and does the right import:
 
