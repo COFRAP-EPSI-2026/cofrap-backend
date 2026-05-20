@@ -112,7 +112,7 @@ curl -s http://127.0.0.1:8080/function/generate-password/healthz
 ```bash
 # Réutilise les secrets déjà fournis, change juste ce qui doit l'être
 helm upgrade cofrap deploy/helm/cofrap -n cofrap --reuse-values \
-  --set functions.version=2026.1.2
+  --set functions.version=<nouvelle-version>
 
 kubectl -n openfaas-fn rollout status deployment -l faas_function
 ```
@@ -130,7 +130,7 @@ kubectl delete namespace cofrap --ignore-not-found
 
 ## Images des fonctions
 
-Le chart pointe par défaut sur `ghcr.io/cofrap-epsi-2026/<function>:2026.1.2`. Ces images n'existent qu'après un tag git `v2026.1.2` (workflow `release.yml`). Sur un fork ou sans release publiée, builder localement avec [`scripts/build-images.sh`](../../../scripts/build-images.sh) / `.ps1`, puis :
+Le chart pointe sur `ghcr.io/cofrap-epsi-2026/<function>:<version>`, où `<version>` est la valeur `functions.version` de [`values.yaml`](values.yaml). Ces images n'existent qu'après un tag git `vX.Y.Z` (workflow `release.yml`). Sur un fork ou sans release publiée, builder localement avec [`scripts/build-images.sh`](../../../scripts/build-images.sh) / `.ps1`, puis :
 
 ```bash
 helm upgrade cofrap deploy/helm/cofrap -n cofrap --reuse-values \
@@ -145,7 +145,7 @@ Voir [`values.yaml`](values.yaml) — commenté. Les plus utiles :
 | Clé                          | Défaut                      | Description                                       |
 |------------------------------|-----------------------------|---------------------------------------------------|
 | `functions.registry`         | `ghcr.io/cofrap-epsi-2026`  | Préfixe registry pour les 3 images                |
-| `functions.version`          | `2026.1.2`                  | Tag des images                                    |
+| `functions.version`          | version courante du chart   | Tag des images (synchronisé par Release Please)   |
 | `functions.pullPolicy`       | `IfNotPresent`              | Mettre `IfNotPresent` pour des images locales     |
 | `functions.totpIssuer`       | `COFRAP`                    | Issuer affiché dans Google Authenticator          |
 | `functions.expirySeconds`    | `15552000` (6 mois)         | Fenêtre de validité — réduire pour démo expiry    |

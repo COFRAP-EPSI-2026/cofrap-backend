@@ -144,15 +144,18 @@ Le déploiement reste manuel (`faas-cli up` / `helm`) — choix volontaire pour 
 
 ## Versioning
 
-Versioning **calendaire** `ANNÉE.MINEUR.CORRECTIF` — version courante : **2026.1.2**.
+Versioning **calendaire** `ANNÉE.MINEUR.CORRECTIF` — version courante : **2026.1.2**. <!-- x-release-please-version -->
 
-Une release se déclenche en poussant un tag git `vYYYY.MINOR.PATCH` :
+Les releases sont **automatisées par [Release Please](https://github.com/googleapis/release-please)** (l'outil de Google), à partir des [Conventional Commits](https://www.conventionalcommits.org/) :
 
-```bash
-git tag v2026.1.2 && git push origin v2026.1.2
-```
+1. Tu pushes des commits `feat:` / `fix:` sur `main`.
+2. Release Please ouvre/maintient une **« Release PR »** qui bumpe tous les fichiers de version + le `CHANGELOG`.
+3. Tu merges cette PR → le tag `vX.Y.Z` et la GitHub Release sont créés.
+4. Le workflow [`release-please.yml`](.github/workflows/release-please.yml) build et pousse les 3 images sur `ghcr.io/cofrap-epsi-2026/<function>:X.Y.Z`.
 
-Le workflow `release.yml` rejoue la CI puis build et pousse les 3 images sur `ghcr.io/cofrap-epsi-2026/<function>:2026.1.2`. Historique complet : [`CHANGELOG.md`](CHANGELOG.md).
+`feat:` → bump mineur (`2026.MINEUR+1.0`), `fix:` → bump correctif (`2026.x.PATCH+1`). Historique complet : [`CHANGELOG.md`](CHANGELOG.md).
+
+> Tags manuels possibles aussi : `git tag vX.Y.Z && git push origin vX.Y.Z` déclenche [`release.yml`](.github/workflows/release.yml).
 
 ## Structure du dépôt
 

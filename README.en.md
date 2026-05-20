@@ -144,15 +144,18 @@ Deployment stays manual (`faas-cli up` / `helm`) — a deliberate choice for the
 
 ## Versioning
 
-**Calendar** versioning `YEAR.MINOR.PATCH` — current version: **2026.1.2**.
+**Calendar** versioning `YEAR.MINOR.PATCH` — current version: **2026.1.2**. <!-- x-release-please-version -->
 
-A release is triggered by pushing a git tag `vYYYY.MINOR.PATCH`:
+Releases are **automated by [Release Please](https://github.com/googleapis/release-please)** (Google's tool), driven by [Conventional Commits](https://www.conventionalcommits.org/):
 
-```bash
-git tag v2026.1.2 && git push origin v2026.1.2
-```
+1. You push `feat:` / `fix:` commits to `main`.
+2. Release Please opens/maintains a **"Release PR"** that bumps every version file + the `CHANGELOG`.
+3. You merge that PR → the `vX.Y.Z` tag and the GitHub Release are created.
+4. The [`release-please.yml`](.github/workflows/release-please.yml) workflow builds and pushes the 3 images to `ghcr.io/cofrap-epsi-2026/<function>:X.Y.Z`.
 
-The `release.yml` workflow replays CI then builds and pushes the 3 images to `ghcr.io/cofrap-epsi-2026/<function>:2026.1.2`. Full history: [`CHANGELOG.md`](CHANGELOG.md).
+`feat:` → minor bump (`2026.MINOR+1.0`), `fix:` → patch bump (`2026.x.PATCH+1`). Full history: [`CHANGELOG.md`](CHANGELOG.md).
+
+> Manual tags still work: `git tag vX.Y.Z && git push origin vX.Y.Z` triggers [`release.yml`](.github/workflows/release.yml).
 
 ## Repository layout
 

@@ -4,6 +4,11 @@ FROM python:3.12-slim
 COPY --from=watchdog /fwatchdog /usr/bin/fwatchdog
 RUN chmod +x /usr/bin/fwatchdog
 
+# Lie l'image GHCR au dépôt GitHub (section "Packages" du repo) + licence.
+LABEL org.opencontainers.image.source="https://github.com/COFRAP-EPSI-2026/cofrap-backend" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.title="cofrap-generate-password"
+
 RUN addgroup --system --gid 10001 app && adduser --system --ingroup app --uid 10001 app
 
 WORKDIR /home/app

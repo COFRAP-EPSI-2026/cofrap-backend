@@ -118,11 +118,13 @@ Tout ce qui n'est pas un secret se règle dans `stack.yml` (`environment:` par f
 
 ## CI/CD
 
-→ Pipeline GitHub Actions documenté dans la section CI/CD du [README racine](../../README.md#cicd) et codé dans [`.github/workflows/`](../../.github/workflows/).
+→ Pipeline GitHub Actions codé dans [`.github/workflows/`](../../.github/workflows/).
 
-Sur un tag `v*.*.*`, le workflow `release.yml` :
-1. Rejoue la suite CI complète (lint + tests)
-2. Build les 3 images multi-arch (amd64 + arm64)
-3. Push sur `ghcr.io/<org>/<function>:<version>` avec SBOM et attestation de provenance
+Les releases sont automatisées par **Release Please** (workflow `release-please.yml`) :
+1. Les commits Conventional (`feat:`, `fix:`) poussés sur `main` alimentent une « Release PR ».
+2. Le merge de cette PR crée le tag `vX.Y.Z` + la GitHub Release et bumpe tous les fichiers de version.
+3. Le même workflow build les 3 images multi-arch (amd64 + arm64) et les pousse sur `ghcr.io/<org>/<function>:<version>` avec SBOM et attestation de provenance.
 
-Le déploiement sur le cluster reste **manuel** (`faas-cli up`) — c'est cohérent avec un PoC où chaque release est validée par l'équipe avant mise en service.
+Le workflow `release.yml` reste disponible pour un tag `v*.*.*` posé à la main (filet de secours).
+
+Le déploiement sur le cluster reste **manuel** (`faas-cli up` ou `helm upgrade`) — c'est cohérent avec un PoC où chaque release est validée par l'équipe avant mise en service.

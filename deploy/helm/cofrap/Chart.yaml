@@ -2,8 +2,8 @@ apiVersion: v2
 name: cofrap
 description: PoC backend serverless COFRAP — MariaDB + 3 fonctions OpenFaaS (generate-password, generate-2fa, authenticate-user).
 type: application
-version: 2026.1.2
-appVersion: "2026.1.2"
+version: 2026.1.2 # x-release-please-version
+appVersion: "2026.1.2" # x-release-please-version
 keywords:
   - openfaas
   - serverless

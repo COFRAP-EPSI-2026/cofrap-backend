@@ -129,26 +129,29 @@ python scripts/generate-openapi.py    # → docs/openapi.yaml
 
 ## CI/CD
 
-- [`ci.yml`](.github/workflows/ci.yml) : `ruff` + `pytest` (avec service MariaDB 11) + build des 3 images Docker (sans push). Réutilisable via `workflow_call` par `release.yml`.
-- [`release.yml`](.github/workflows/release.yml) : sur tag `v*.*.*`, rejoue le CI puis matrix sur les 3 fonctions → build multi-arch amd64/arm64 + push sur `ghcr.io/<org>/<function>:<version>` avec `provenance: true` et `sbom: true`.
+Trois workflows GitHub Actions :
+
+- [`ci.yml`](.github/workflows/ci.yml) : `ruff` + `pytest` (avec service MariaDB 11) + build des 3 images Docker (sans push). Réutilisable via `workflow_call`.
+- [`release-please.yml`](.github/workflows/release-please.yml) : sur push `main`, Release Please maintient la Release PR ; au merge → tag + GitHub Release + build/push des 3 images multi-arch. **Voie principale de release.**
+- [`release.yml`](.github/workflows/release.yml) : sur tag `v*.*.*` poussé manuellement → build multi-arch + push GHCR. Filet de secours pour un tag posé à la main.
 
 Le déploiement sur cluster est **manuel** (`faas-cli up` / `helm`) — pas de CD automatique.
 
 ## Versioning
 
-Versioning **calendaire** `YYYY.MINOR.PATCH` (ex. `2026.1.0`). Une release = un tag git `vYYYY.MINOR.PATCH`. Historique dans [`CHANGELOG.md`](CHANGELOG.md).
+Versioning **calendaire** `YYYY.MINOR.PATCH` (ex. `2026.1.2`). Les releases sont **automatisées par Release Please** — **ne JAMAIS bumper la version à la main**.
 
-La version est portée par **plusieurs fichiers qui doivent rester synchronisés** — un bump les touche tous ensemble :
+Fonctionnement :
+- `release-please.yml` tourne sur push `main`, lit les Conventional Commits (`feat:` → bump mineur, `fix:` → bump correctif), et maintient une « Release PR ».
+- Le merge de cette PR crée le tag `vX.Y.Z` + la GitHub Release, puis le même workflow build/push les 3 images.
+- Le bump des fichiers est piloté par l'annotation `x-release-please-version` posée sur la ligne de version de chaque fichier, et par la liste `extra-files` de [`release-please-config.json`](release-please-config.json).
 
-- `pyproject.toml` (`version`)
-- `deploy/helm/cofrap/Chart.yaml` (`version` **et** `appVersion`)
-- `deploy/helm/cofrap/values.yaml` (`functions.version`)
-- `stack.yml` (les 3 tags `image:`)
-- `functions/*/main.py` (`version=` de `FastAPI(...)`) × 3
-- `scripts/generate-openapi.py` (`"version"` dans `_base_spec`)
-- `scripts/build-images.sh` + `.ps1` (défaut `TAG` / `$Tag`)
-- `docs/openapi.yaml` → régénéré via `python scripts/generate-openapi.py`
-- `CHANGELOG.md` (nouvelle entrée) + les deux README (section Versioning)
+Fichiers porteurs de version (annotés `x-release-please-version`, bumpés automatiquement) :
+`pyproject.toml`, `deploy/helm/cofrap/Chart.yaml` (×2 : `version` + `appVersion`), `deploy/helm/cofrap/values.yaml`, `stack.yml` (×3 `image:`), `functions/*/main.py` (×3), `scripts/generate-openapi.py`, `scripts/build-images.sh` + `.ps1`, `README.md` + `README.en.md` (ligne « version courante »).
+
+**Si tu ajoutes un nouveau fichier portant la version** : pose l'annotation `# x-release-please-version` (ou `<!-- x-release-please-version -->` en markdown) sur la ligne, et ajoute le chemin dans `extra-files` de `release-please-config.json`.
+
+`docs/openapi.yaml` n'est **pas** annoté (généré) — il se met à jour via `python scripts/generate-openapi.py` après un bump. `CHANGELOG.md` est géré par Release Please.
 
 ## Quand tu finis quelque chose
 
@@ -159,6 +162,6 @@ Si tu ajoutes/modifies du code applicatif :
 3. Si tu as touché un `main.py` ou un modèle Pydantic : `python scripts/generate-openapi.py` pour rafraîchir `docs/openapi.yaml`.
 4. Si tu touches une fonction, vérifier que la documentation correspondante reste à jour, **dans les deux langues** : `docs/{fr,en}/api.md` (payload/erreurs), `docs/{fr,en}/architecture.md` (si flux modifié), `docs/{fr,en}/security.md` (si traitement des secrets modifié).
 5. Si tu ajoutes un nouveau choix structurant, ajouter une ADR dans `docs/fr/adr/` **et** `docs/en/adr/`.
-6. Si tu changes la version, suivre la liste de la section [Versioning](#versioning) — tous les fichiers d'un coup — et ajouter une entrée `CHANGELOG.md`.
+6. **Ne pas bumper la version manuellement** : Release Please s'en charge (cf. section [Versioning](#versioning)). Utiliser des commits Conventional (`feat:`, `fix:`).
 7. Toute modif documentaire est faite dans `docs/fr/` **et** `docs/en/` (et `README.md` + `README.en.md`) dans le même changement.
 8. Pas de README/docs autogénérés sans demande explicite — le PoC veut rester lisible et concis.

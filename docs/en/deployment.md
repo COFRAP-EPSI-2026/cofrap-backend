@@ -118,11 +118,13 @@ Everything that is not a secret is set in `stack.yml` (`environment:` per functi
 
 ## CI/CD
 
-→ The GitHub Actions pipeline is documented in the CI/CD section of the [root README](../../README.md#cicd) and coded in [`.github/workflows/`](../../.github/workflows/).
+→ The GitHub Actions pipeline is coded in [`.github/workflows/`](../../.github/workflows/).
 
-On a `v*.*.*` tag, the `release.yml` workflow:
-1. Replays the full CI suite (lint + tests)
-2. Builds the 3 multi-arch images (amd64 + arm64)
-3. Pushes to `ghcr.io/<org>/<function>:<version>` with SBOM and provenance attestation
+Releases are automated by **Release Please** (`release-please.yml` workflow):
+1. Conventional commits (`feat:`, `fix:`) pushed to `main` feed a "Release PR".
+2. Merging that PR creates the `vX.Y.Z` tag + the GitHub Release and bumps every version file.
+3. The same workflow builds the 3 multi-arch images (amd64 + arm64) and pushes them to `ghcr.io/<org>/<function>:<version>` with SBOM and provenance attestation.
+
+The `release.yml` workflow remains available for a manually pushed `v*.*.*` tag (fallback).
 
 Deployment to the cluster stays **manual** (`faas-cli up` or `helm upgrade`) — consistent with a PoC where each release is validated by the team before going live.
