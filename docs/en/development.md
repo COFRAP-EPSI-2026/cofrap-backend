@@ -24,8 +24,8 @@ pip install -r requirements-dev.txt
 cp .env.example .env
 python -c "from cryptography.fernet import Fernet; print('ENCRYPTION_KEY=' + Fernet.generate_key().decode())" >> .env
 
-# Start local MariaDB
-docker compose up -d
+# Start MariaDB (enough to run pytest)
+docker compose up -d mariadb
 ```
 
 At this point, `pytest` must pass green (36 tests).
@@ -55,6 +55,39 @@ curl -s -X POST http://127.0.0.1:5001/ \
      -d '{"username":"alice"}' | jq
 ```
 
+## Full stack with docker-compose (Traefik)
+
+`docker compose up -d --build` starts the **full dev stack**: MariaDB, the 3 built
+functions and a **Traefik** reverse-proxy that mimics the OpenFaaS gateway.
+
+```bash
+docker compose up -d --build
+```
+
+| Service             | Host port | Role                                                    |
+|---------------------|-----------|---------------------------------------------------------|
+| Traefik             | `8080`    | Gateway — routes `/function/<name>` to each function    |
+| Traefik (dashboard) | `8090`    | <http://localhost:8090/dashboard/> — discovered routes  |
+| phpMyAdmin          | `8082`    | DB inspection                                           |
+| MariaDB             | `3306`    | Database                                                |
+
+The functions then answer exactly as behind the OpenFaaS gateway:
+
+```bash
+curl -s -X POST http://localhost:8080/function/generate-password \
+     -H 'Content-Type: application/json' \
+     -d '{"username":"alice"}' | jq
+```
+
+This is the URL shape expected by the **frontend** (Vite `/api` proxy) and by the
+Bruno "Local OpenFaaS Gateway" environment — handy to test the whole
+frontend + backend without a Kubernetes cluster.
+
+Prerequisite: `.env` must contain a valid `ENCRYPTION_KEY` (generated in the setup
+above); otherwise `docker compose up` stops with an explicit message.
+
+Stop: `docker compose down` (`-v` to also drop the MariaDB volume).
+
 ## Code conventions
 
 - **Lint**: `ruff check .`
@@ -75,7 +108,7 @@ pytest
 # Unit only
 pytest -m unit
 
-# Integration only (requires docker compose up -d)
+# Integration only (requires MariaDB: docker compose up -d mariadb)
 pytest -m integration
 
 # A single test

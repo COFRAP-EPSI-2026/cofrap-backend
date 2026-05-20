@@ -30,6 +30,8 @@ ENV write_timeout="30s"
 ENV read_timeout="30s"
 
 EXPOSE 8080
-HEALTHCHECK --interval=5s --timeout=3s CMD wget --quiet --tries=1 --spider http://127.0.0.1:8080/healthz || exit 1
+# Sonde de santé en Python : l'image python:3.12-slim n'embarque ni wget ni curl.
+HEALTHCHECK --interval=5s --timeout=3s --start-period=10s \
+  CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=2).status == 200 else 1)" || exit 1
 
 CMD ["fwatchdog"]

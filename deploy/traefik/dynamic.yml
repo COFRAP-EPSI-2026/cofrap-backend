@@ -1,0 +1,51 @@
+# Configuration dynamique Traefik (file provider).
+#
+# Routage du gateway local de dev : imite le gateway OpenFaaS.
+#   /function/<name>  →  conteneur <name>:8080, le préfixe étant retiré
+# (la fonction FastAPI répond sur `/` et `/healthz`).
+#
+# Le file provider évite toute dépendance au socket Docker — le routage est
+# explicite et fonctionne à l'identique sur Windows / macOS / Linux.
+
+http:
+  routers:
+    generate-password:
+      rule: "PathPrefix(`/function/generate-password`)"
+      entryPoints: [web]
+      middlewares: [strip-generate-password]
+      service: generate-password
+    generate-2fa:
+      rule: "PathPrefix(`/function/generate-2fa`)"
+      entryPoints: [web]
+      middlewares: [strip-generate-2fa]
+      service: generate-2fa
+    authenticate-user:
+      rule: "PathPrefix(`/function/authenticate-user`)"
+      entryPoints: [web]
+      middlewares: [strip-authenticate-user]
+      service: authenticate-user
+
+  middlewares:
+    strip-generate-password:
+      stripPrefix:
+        prefixes: ["/function/generate-password"]
+    strip-generate-2fa:
+      stripPrefix:
+        prefixes: ["/function/generate-2fa"]
+    strip-authenticate-user:
+      stripPrefix:
+        prefixes: ["/function/authenticate-user"]
+
+  services:
+    generate-password:
+      loadBalancer:
+        servers:
+          - url: "http://generate-password:8080"
+    generate-2fa:
+      loadBalancer:
+        servers:
+          - url: "http://generate-2fa:8080"
+    authenticate-user:
+      loadBalancer:
+        servers:
+          - url: "http://authenticate-user:8080"
