@@ -151,6 +151,17 @@ Each function exposes `GET /healthz` returning `{"status": "ok"}`. This is the p
 
 ---
 
+## CORS
+
+All 3 functions return CORS headers — the frontend (served from a different origin) can therefore call them from the browser. Allowed origins are driven by the `CORS_ALLOW_ORIGINS` environment variable:
+
+- `*` (default) — all origins (handy for dev and the PoC).
+- Comma-separated list — e.g. `https://app.cofrap.example.com,http://localhost:5173` to restrict in production.
+
+The API uses no cookies (authentication goes through the JSON body), so `allow_credentials` is disabled — which makes the `*` default safe.
+
+---
+
 ## Testing the API
 
 A complete Bruno collection is provided in [`bruno/`](../../bruno/) — nominal flow and error cases ready to use, with client-side TOTP computation to automate the authentication test.

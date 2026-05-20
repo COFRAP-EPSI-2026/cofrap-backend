@@ -18,16 +18,23 @@ La même version est portée par : `pyproject.toml`, `deploy/helm/cofrap/Chart.y
 
 ---
 
+## [2026.1.2] — 2026-05-20
+
+Aucun changement du schéma BDD. Le contrat d'API est inchangé ; seuls des en-têtes CORS sont ajoutés aux réponses.
+
+### Ajouté / Added
+
+- Middleware CORS sur les 3 fonctions (`CORSMiddleware` FastAPI) — permet au frontend, servi depuis une autre origine, d'appeler l'API depuis le navigateur. Origines configurables via la variable d'environnement `CORS_ALLOW_ORIGINS` (`*` par défaut, ou liste séparée par virgules). Câblé dans `stack.yml`, le chart Helm (`functions.corsAllowOrigins`) et `.env.example`.
+- 9 tests CORS (`tests/unit/test_cors.py`) : préflight OPTIONS, en-tête sur requête simple, restriction par liste explicite.
+
 ## [2026.1.1] — 2026-05-20
 
-Version de correctif / maintenance. Aucun changement du schéma BDD ni du contrat d'API.
+Version de maintenance — alignement des versions et du registre d'images.
 
 ### Corrigé / Fixed
 
 - Harmonisation du registre d'images sur `ghcr.io/cofrap-epsi-2026` dans tous les manifestes (`stack.yml` alignait encore l'ancien préfixe `ghcr.io/cofrap`).
 - Cohérence de version : toutes les sources (`pyproject.toml`, chart Helm, `stack.yml`, apps FastAPI, scripts, `docs/openapi.yaml`) portent désormais la même valeur.
-
-> Compléter cette section au fil des correctifs livrés sous `2026.1.x`.
 
 ## [2026.1.0] — 2026-05-20
 
@@ -53,5 +60,6 @@ Première release du PoC backend serverless COFRAP (MSPR TPRE912).
 - Déploiement compatible **OpenFaaS Community** : les fonctions sont des `Deployment` + `Service` labellisés `faas_function=<name>` (l'operator CRD est réservé à OpenFaaS Pro).
 - Le déploiement sur cluster reste manuel (`./scripts/install.sh` ou `helm upgrade`) — pas de CD automatique dans cette version.
 
+[2026.1.2]: https://github.com/COFRAP-EPSI-2026/cofrap-backend/releases/tag/v2026.1.2
 [2026.1.1]: https://github.com/COFRAP-EPSI-2026/cofrap-backend/releases/tag/v2026.1.1
 [2026.1.0]: https://github.com/COFRAP-EPSI-2026/cofrap-backend/releases/tag/v2026.1.0

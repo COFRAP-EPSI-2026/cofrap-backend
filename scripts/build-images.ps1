@@ -15,7 +15,7 @@
 [CmdletBinding()]
 param(
     [string]$Registry = "ghcr.io/cofrap-epsi-2026",
-    [string]$Tag = "2026.1.1",
+    [string]$Tag = "2026.1.2",
     [ValidateSet("auto", "minikube", "kind", "k3d", "k3s", "generic")]
     [string]$ClusterType = "auto",
     [switch]$Push

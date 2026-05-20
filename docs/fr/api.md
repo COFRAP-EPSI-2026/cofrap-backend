@@ -151,6 +151,17 @@ Chaque fonction expose `GET /healthz` qui renvoie `{"status": "ok"}`. C'est le s
 
 ---
 
+## CORS
+
+Les 3 fonctions renvoient les en-têtes CORS — le frontend (servi depuis une autre origine) peut donc les appeler depuis le navigateur. Les origines autorisées sont pilotées par la variable d'environnement `CORS_ALLOW_ORIGINS` :
+
+- `*` (défaut) — toutes les origines (pratique en dev et pour le PoC).
+- Liste séparée par virgules — ex. `https://app.cofrap.example.com,http://localhost:5173` pour restreindre en production.
+
+L'API n'utilise pas de cookies (l'authentification passe par le corps JSON), donc `allow_credentials` est désactivé — ce qui rend le défaut `*` sûr.
+
+---
+
 ## Tester l'API
 
 Une collection Bruno complète est fournie dans [`bruno/`](../../bruno/) — flux nominal et cas d'erreur prêts à l'emploi, avec calcul TOTP côté client pour automatiser le test d'authentification.

@@ -2,21 +2,21 @@
 # Les fonctions ont leurs propres requirements.txt (utilisés par les Dockerfile).
 
 # Lint / format
-ruff==0.9.2
+ruff==0.15.13
 
 # Tests
-pytest==8.3.4
-pytest-cov==6.0.0
-httpx==0.28.1            # TestClient FastAPI utilise httpx
+pytest==9.0.3
+pytest-cov==7.1.0
+httpx==0.28.1
 
 # Dépendances applicatives — installées globalement pour exécuter les tests
-fastapi==0.115.6
-uvicorn[standard]==0.34.0
-pydantic==2.10.4
-pymysql==1.1.1
-cryptography==44.0.0
-qrcode[pil]==8.0
+fastapi==0.136.1
+uvicorn[standard]==0.47.0
+pydantic==2.13.4
+pymysql==1.2.0
+cryptography==48.0.0
+qrcode[pil]==8.2
 pyotp==2.9.0
 
 # Génération OpenAPI
-pyyaml==6.0.2
+pyyaml==6.0.3

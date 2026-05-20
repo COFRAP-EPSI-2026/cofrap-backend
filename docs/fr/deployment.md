@@ -107,6 +107,7 @@ Tout ce qui n'est pas un secret se règle dans `stack.yml` (`environment:` par f
 | `DB_USER`          | `cofrap`                            | Utilisateur applicatif (pas root !)                 |
 | `TOTP_ISSUER`      | `COFRAP`                            | Nom affiché dans Google Authenticator               |
 | `EXPIRY_SECONDS`   | `15552000` (6 mois)                 | Fenêtre de validité — réduire pour tester l'expiry  |
+| `CORS_ALLOW_ORIGINS` | `*`                               | Origines autorisées à appeler l'API depuis un navigateur — `*` ou liste séparée par virgules |
 | `read_timeout`/`write_timeout`/`exec_timeout` | `30s`     | Limites of-watchdog                                 |
 
 ## Mises à jour

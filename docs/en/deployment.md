@@ -107,6 +107,7 @@ Everything that is not a secret is set in `stack.yml` (`environment:` per functi
 | `DB_USER`          | `cofrap`                            | Application user (not root!)                        |
 | `TOTP_ISSUER`      | `COFRAP`                            | Name shown in Google Authenticator                  |
 | `EXPIRY_SECONDS`   | `15552000` (6 months)               | Validity window — lower it to test expiry           |
+| `CORS_ALLOW_ORIGINS` | `*`                               | Origins allowed to call the API from a browser — `*` or a comma-separated list |
 | `read_timeout`/`write_timeout`/`exec_timeout` | `30s`     | of-watchdog limits                                  |
 
 ## Updates

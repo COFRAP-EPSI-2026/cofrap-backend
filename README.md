@@ -144,15 +144,15 @@ Le déploiement reste manuel (`faas-cli up` / `helm`) — choix volontaire pour 
 
 ## Versioning
 
-Versioning **calendaire** `ANNÉE.MINEUR.CORRECTIF` — version courante : **2026.1.1**.
+Versioning **calendaire** `ANNÉE.MINEUR.CORRECTIF` — version courante : **2026.1.2**.
 
 Une release se déclenche en poussant un tag git `vYYYY.MINOR.PATCH` :
 
 ```bash
-git tag v2026.1.1 && git push origin v2026.1.1
+git tag v2026.1.2 && git push origin v2026.1.2
 ```
 
-Le workflow `release.yml` rejoue la CI puis build et pousse les 3 images sur `ghcr.io/cofrap-epsi-2026/<function>:2026.1.1`. Historique complet : [`CHANGELOG.md`](CHANGELOG.md).
+Le workflow `release.yml` rejoue la CI puis build et pousse les 3 images sur `ghcr.io/cofrap-epsi-2026/<function>:2026.1.2`. Historique complet : [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Structure du dépôt
 

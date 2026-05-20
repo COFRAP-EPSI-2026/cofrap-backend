@@ -46,6 +46,14 @@ The key (32 url-safe base64 bytes) lives only in the `encryption-key` OpenFaaS s
 - The **TOTP secret** leaves `generate-2fa` in two redundant forms (`otpauth://` URI + PNG QR). The URI contains the secret in clear text (base32) — that is the standard; security relies on the gateway's TLS channel.
 - **TLS mandatory in production** on the OpenFaaS gateway (cert-manager + Let's Encrypt via `arkade install openfaas-ingress`).
 
+## CORS
+
+All 3 functions enable FastAPI's `CORSMiddleware` so the frontend (served from a different origin) can call them from the browser. Origins are driven by `CORS_ALLOW_ORIGINS` (`*` by default, or an explicit comma-separated list).
+
+- The API **uses no cookies**: authentication goes through the JSON body. `allow_credentials` is therefore disabled — which avoids the "`*` + credentials" pitfall forbidden by the CORS spec.
+- In **production**, restrict `CORS_ALLOW_ORIGINS` to the real frontend origin (e.g. `https://app.cofrap.example.com`) rather than `*`.
+- CORS is a **browser-side** protection, not a server access control: it replaces neither authentication nor rate limiting. A non-browser client (curl, script) ignores CORS entirely.
+
 ## 6-month rotation
 
 Implemented inside the `authenticate-user` function, not via a cron job:
