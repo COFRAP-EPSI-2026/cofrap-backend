@@ -4,7 +4,7 @@ Chaque fonction est invoquée via le gateway OpenFaaS sur `POST /function/<name>
 
 URL de base : `{{gateway}}/function/`
 
-> **Contrat machine-lisible** : [`openapi.yaml`](openapi.yaml) (OpenAPI 3.1) — généré automatiquement depuis les apps FastAPI par [`scripts/generate-openapi.py`](../scripts/generate-openapi.py). À ouvrir dans [Swagger Editor](https://editor.swagger.io/), [Redocly](https://redocly.github.io/redoc/) ou n'importe quel client API (Bruno, Postman, Insomnia) supportant l'import OpenAPI.
+> **Contrat machine-lisible** : [`openapi.yaml`](../openapi.yaml) (OpenAPI 3.1) — généré automatiquement depuis les apps FastAPI par [`scripts/generate-openapi.py`](../../scripts/generate-openapi.py). À ouvrir dans [Swagger Editor](https://editor.swagger.io/), [Redocly](https://redocly.github.io/redoc/) ou n'importe quel client API (Bruno, Postman, Insomnia) supportant l'import OpenAPI.
 
 ---
 
@@ -153,4 +153,4 @@ Chaque fonction expose `GET /healthz` qui renvoie `{"status": "ok"}`. C'est le s
 
 ## Tester l'API
 
-Une collection Bruno complète est fournie dans [`bruno/`](../bruno/) — flux nominal et cas d'erreur prêts à l'emploi, avec calcul TOTP côté client pour automatiser le test d'authentification.
+Une collection Bruno complète est fournie dans [`bruno/`](../../bruno/) — flux nominal et cas d'erreur prêts à l'emploi, avec calcul TOTP côté client pour automatiser le test d'authentification.

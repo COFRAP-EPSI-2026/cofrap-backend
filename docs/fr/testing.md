@@ -123,7 +123,7 @@ def test_handler_encrypts_password_before_storage(load_function, mock_pymysql):
 
 ## CI
 
-Workflow [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) :
+Workflow [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) :
 
 1. `ruff check .` + `ruff format --check .`
 2. `pytest --cov=functions --cov-report=xml --junitxml=pytest-report.xml`

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 PoC **backend serverless** demandé par la COFRAP dans la MSPR TPRE912. Trois fonctions OpenFaaS Python/FastAPI + MariaDB. Frontend TypeScript dans un dépôt séparé.
 
-Le `README.md` racine est la porte d'entrée utilisateur. `docs/` contient la documentation détaillée. Cette page (`CLAUDE.md`) ne répète pas le README — elle pointe vers ce que Claude doit savoir pour bouger vite.
+Le `README.md` (FR) et `README.en.md` (EN) racine sont la porte d'entrée utilisateur. La documentation détaillée est **bilingue** : `docs/fr/` et `docs/en/` (contenu en miroir). Cette page (`CLAUDE.md`) ne répète pas le README — elle pointe vers ce que Claude doit savoir pour bouger vite.
 
 ## Stack et architecture
 
@@ -17,21 +17,23 @@ Le `README.md` racine est la porte d'entrée utilisateur. `docs/` contient la do
 - Chiffrement applicatif : **Fernet** (`cryptography`) sur les champs `password` et `mfa` en BDD.
 - 2FA : **pyotp** (RFC 6238), QR code via **qrcode** + PIL.
 
-Architecture complète : [`docs/architecture.md`](docs/architecture.md). Justifications : [`docs/adr/`](docs/adr/).
+Architecture complète : [`docs/fr/architecture.md`](docs/fr/architecture.md). Justifications : [`docs/fr/adr/`](docs/fr/adr/).
 
 ## Structure du dépôt (résumé)
 
 ```
 functions/<name>/      # 3 fonctions, chacune autonome (Dockerfile, main.py, db.py, crypto.py, qr.py)
 deploy/
-  helm/cofrap/         # CHART HELM unique (MariaDB + secrets + Function CRDs) — voie principale
+  helm/cofrap/         # CHART HELM unique (MariaDB + secrets + Deployments des 3 fonctions) — voie principale
   mariadb/             # manifestes K8s bruts (alternative kubectl apply)
   init.sql, openfaas-secrets.example.sh
 tests/unit/            # pytest avec mock pymysql
 tests/integration/     # pytest avec MariaDB réelle (docker-compose / service GHA)
 bruno/                 # collection Bruno prête à l'emploi (envs + flux nominal + cas d'erreur)
-docs/                  # installation, architecture, api, deployment, security, dev, testing, troubleshooting, ADR, openapi.yaml
-scripts/               # install.sh / install.ps1 / uninstall.sh / uninstall.ps1 / generate-openapi.py
+docs/
+  fr/ , en/            # doc bilingue EN MIROIR (installation, architecture, api, deployment, security, dev, testing, troubleshooting, adr/)
+  openapi.yaml         # contrat OpenAPI 3.1 (neutre, à la racine de docs/)
+scripts/               # install / uninstall / build-images (.sh + .ps1) + generate-openapi.py
 .github/workflows/     # ci.yml (PR + push main) + release.yml (sur tag v*)
 stack.yml              # manifeste OpenFaaS (alternative au chart, pour `faas-cli up`)
 docker-compose.yml     # MariaDB pour dev local
@@ -92,7 +94,7 @@ faas-cli secret list
 ./scripts/uninstall.sh           # nettoyage
 ```
 
-Voir [`docs/installation.md`](docs/installation.md) pour les variantes K3s / minikube / cluster existant. Le chart vit dans [`deploy/helm/cofrap/`](deploy/helm/cofrap/). Pour valider sans appliquer : `helm lint deploy/helm/cofrap && helm template cofrap deploy/helm/cofrap --set secrets.encryptionKey=x --set secrets.mariadbPassword=x --set secrets.mariadbRootPassword=x`.
+Voir [`docs/fr/installation.md`](docs/fr/installation.md) pour les variantes K3s / minikube / cluster existant. Le chart vit dans [`deploy/helm/cofrap/`](deploy/helm/cofrap/). Pour valider sans appliquer : `helm lint deploy/helm/cofrap && helm template cofrap deploy/helm/cofrap --set secrets.encryptionKey=x --set secrets.mariadbPassword=x --set secrets.mariadbRootPassword=x`.
 
 ### API spec (OpenAPI)
 
@@ -113,7 +115,9 @@ python scripts/generate-openapi.py    # → docs/openapi.yaml
 
 ## Conventions critiques pour Claude
 
-- **Modules partagés dupliqués** : `db.py`, `crypto.py`, `qr.py` existent en copie dans chaque fonction. Si tu modifies l'un, répercute dans les **3** dossiers (`generate-password`, `generate-2fa`, `authenticate-user`). Justification : [`docs/adr/0006-duplicate-shared-utilities.md`](docs/adr/0006-duplicate-shared-utilities.md).
+- **Modules partagés dupliqués** : `db.py`, `crypto.py`, `qr.py` existent en copie dans chaque fonction. Si tu modifies l'un, répercute dans les **3** dossiers (`generate-password`, `generate-2fa`, `authenticate-user`). Justification : [`docs/fr/adr/0006-duplicate-shared-utilities.md`](docs/fr/adr/0006-duplicate-shared-utilities.md).
+- **Documentation bilingue en miroir** : toute modif d'un fichier `docs/fr/<x>.md` doit être répercutée dans `docs/en/<x>.md` (et inversement). Les deux arbres ont la même structure. `docs/openapi.yaml` est neutre (généré, pas de version par langue).
+- **Déploiement = Deployments K8s, pas CRD `Function`** : OpenFaaS Community ne supporte pas l'operator (réservé Pro). Le chart crée des `Deployment` + `Service` labellisés `faas_function=<name>` dans `openfaas-fn`. Ne pas réintroduire de CRD `openfaas.com/v1`.
 - **Fallback env vars** : `_read_secret(name)` lit `/var/openfaas/secrets/<name>` en prod, fallback sur la variable d'env `<NAME_UPPER_SNAKE>` pour dev/CI. Quand tu ajoutes un nouveau secret, suis le même pattern.
 - **Tests d'intégration** = MariaDB **réelle** (pas de mock). Si tu changes une requête SQL, le test d'intégration doit la valider. Voir `tests/integration/test_full_flow.py`.
 - **Format des réponses d'erreur** : utiliser `HTTPException(status_code=…, detail="…")` avec un message en anglais lowercase (`"invalid credentials"`, `"invalid otp"`, `"user not found"`). Plusieurs tests asserent sur ces strings.
@@ -137,6 +141,6 @@ Si tu ajoutes/modifies du code applicatif :
 1. `ruff check --fix . && ruff format .`
 2. `pytest` doit passer (les 36 tests existants + tes nouveaux)
 3. Si tu as touché un `main.py` ou un modèle Pydantic : `python scripts/generate-openapi.py` pour rafraîchir `docs/openapi.yaml`.
-4. Si tu touches une fonction, vérifier que la documentation correspondante reste à jour : `docs/api.md` (payload/erreurs), `docs/architecture.md` (si flux modifié), `docs/security.md` (si traitement des secrets modifié).
-5. Si tu ajoutes un nouveau choix structurant, ajouter une ADR dans `docs/adr/`.
+4. Si tu touches une fonction, vérifier que la documentation correspondante reste à jour, **dans les deux langues** : `docs/{fr,en}/api.md` (payload/erreurs), `docs/{fr,en}/architecture.md` (si flux modifié), `docs/{fr,en}/security.md` (si traitement des secrets modifié).
+5. Si tu ajoutes un nouveau choix structurant, ajouter une ADR dans `docs/fr/adr/` **et** `docs/en/adr/`.
 6. Pas de README/docs autogénérés sans demande explicite — le PoC veut rester lisible et concis.

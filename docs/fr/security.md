@@ -72,7 +72,7 @@ Variable d'environnement `EXPIRY_SECONDS` pour overrider la fenêtre en test (ut
 | `mariadb-password`  | Secret OpenFaaS                             | `db.py` à chaque ouverture de connexion |
 | MariaDB credentials | `Secret` Kubernetes `mariadb-credentials`   | Le pod MariaDB (`envFrom`)      |
 
-Aucun secret n'est commité — voir [`deploy/mariadb/secret.yaml`](../deploy/mariadb/secret.yaml) qui contient des **placeholders à éditer** avant `kubectl apply`.
+Aucun secret n'est commité — voir [`deploy/mariadb/secret.yaml`](../../deploy/mariadb/secret.yaml) qui contient des **placeholders à éditer** avant `kubectl apply`.
 
 Le pattern `_read_secret(name)` (cf. `functions/*/crypto.py`) :
 1. Lit `/var/openfaas/secrets/<name>` si présent (cas OpenFaaS prod).
@@ -81,7 +81,7 @@ Le pattern `_read_secret(name)` (cf. `functions/*/crypto.py`) :
 ## Conteneurs
 
 - Image Python `slim` minimaliste.
-- Utilisateur non-root (`app`) — créé dans le `Dockerfile`.
+- Utilisateur non-root (UID `10001`) — créé dans le `Dockerfile`, déclaré numériquement pour que Kubelet puisse vérifier `runAsNonRoot`.
 - `HEALTHCHECK` Docker sur `/healthz` (non utilisé par Kubernetes mais utile en `docker run` direct).
 - of-watchdog en mode HTTP — pas de fork-exec par requête, plus performant et plus simple à auditer.
 

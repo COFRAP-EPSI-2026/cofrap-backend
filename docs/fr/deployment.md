@@ -25,7 +25,7 @@ kubectl port-forward -n openfaas svc/gateway 8080:8080 & echo "$PASSWORD" | faas
 
 ## 2. Déployer la stack (recommandé : chart Helm)
 
-Un seul chart Helm — [`deploy/helm/cofrap`](../deploy/helm/cofrap) — déploie MariaDB, crée les secrets OpenFaaS dans `openfaas-fn` et les 3 CRD `Function`. Procédure complète : [`installation.md`](installation.md).
+Un seul chart Helm — [`deploy/helm/cofrap`](../../deploy/helm/cofrap) — déploie MariaDB, crée les secrets OpenFaaS dans `openfaas-fn` et les 3 fonctions (1 Deployment + 1 Service chacune). Procédure complète : [`installation.md`](installation.md).
 
 ```bash
 ENCRYPTION_KEY="$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')"
@@ -44,13 +44,13 @@ Vérification :
 
 ```bash
 kubectl -n cofrap get pods,svc,pvc
-kubectl -n openfaas-fn get functions.openfaas.com
+kubectl -n openfaas-fn get deploy,svc -l faas_function
 curl -s http://127.0.0.1:8080/function/generate-password/healthz   # après port-forward
 ```
 
 ## 2bis. Alternative : déploiement manuel sans Helm
 
-Si tu préfères `kubectl apply` direct (ou si tu n'as pas Helm), les manifestes bruts existent dans [`deploy/mariadb/`](../deploy/mariadb/) :
+Si tu préfères `kubectl apply` direct (ou si tu n'as pas Helm), les manifestes bruts existent dans [`deploy/mariadb/`](../../deploy/mariadb/) :
 
 ```bash
 kubectl apply -f deploy/mariadb/namespace.yaml
@@ -117,7 +117,7 @@ Tout ce qui n'est pas un secret se règle dans `stack.yml` (`environment:` par f
 
 ## CI/CD
 
-→ Pipeline GitHub Actions documenté dans la section CI/CD du [README racine](../README.md#cicd) et codé dans [`.github/workflows/`](../.github/workflows/).
+→ Pipeline GitHub Actions documenté dans la section CI/CD du [README racine](../../README.md#cicd) et codé dans [`.github/workflows/`](../../.github/workflows/).
 
 Sur un tag `v*.*.*`, le workflow `release.yml` :
 1. Rejoue la suite CI complète (lint + tests)

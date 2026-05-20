@@ -2,6 +2,8 @@
 
 # cofrap-backend
 
+**🇫🇷 Français** · [🇬🇧 English](README.en.md)
+
 **Backend serverless du PoC COFRAP** — gestion automatisée des credentials avec mot de passe robuste, 2FA TOTP et rotation 6 mois, déployé sur OpenFaaS.
 
 [![CI](https://github.com/COFRAP-EPSI-2026/cofrap-backend/actions/workflows/ci.yml/badge.svg)](https://github.com/COFRAP-EPSI-2026/cofrap-backend/actions/workflows/ci.yml)
@@ -22,7 +24,7 @@
 - [Architecture](#architecture)
 - [Fonctions](#fonctions)
 - [Démarrage rapide](#démarrage-rapide)
-- [Déploiement OpenFaaS](#déploiement-openfaas)
+- [Déploiement sur Kubernetes](#déploiement-sur-kubernetes)
 - [Tests](#tests)
 - [CI/CD](#cicd)
 - [Structure du dépôt](#structure-du-dépôt)
@@ -38,27 +40,26 @@ Réponse à la **MSPR TPRE912** (BLOC 2 — gestion d'un projet de développemen
 
 La COFRAP, suite à plusieurs compromissions de comptes liés à des mots de passe faibles et à l'absence de 2FA, a remanié son processus de création de comptes : génération automatique d'un mot de passe à 24 caractères, activation forcée du 2FA TOTP, expiration à 6 mois. Ce dépôt en est le PoC backend serverless.
 
-Frontend TypeScript séparé · documentation détaillée dans [`docs/`](docs/).
+Frontend TypeScript séparé · documentation détaillée dans [`docs/fr/`](docs/fr/README.md).
 
 ## Architecture
 
 ```
 ┌──────────────┐    HTTP/JSON     ┌────────────────────────┐    SQL    ┌──────────┐
 │ Frontend TS  │ ────────────────►│    OpenFaaS Gateway    │ ─────────►│ MariaDB  │
-└──────────────┘                  │                        │           └──────────┘
-                                  │  ├─ generate-password  │
+└──────────────┘                  │  ├─ generate-password  │           └──────────┘
                                   │  ├─ generate-2fa       │
                                   │  └─ authenticate-user  │
                                   └────────────────────────┘
                                           ▲
                                           │  secrets OpenFaaS
                                           │  ├─ mariadb-password
-                                          └──└─ encryption-key (Fernet)
+                                          │  └─ encryption-key (Fernet)
 ```
 
 **Stack** : Python 3.12 · FastAPI · Uvicorn · of-watchdog (HTTP mode) · PyMySQL · Fernet · pyotp · qrcode · MariaDB 11.
 
-→ Détails et justifications : [`docs/architecture.md`](docs/architecture.md) et [`docs/adr/`](docs/adr/).
+→ Détails et justifications : [`docs/fr/architecture.md`](docs/fr/architecture.md) et [`docs/fr/adr/`](docs/fr/adr/).
 
 ## Fonctions
 
@@ -68,7 +69,7 @@ Frontend TypeScript séparé · documentation détaillée dans [`docs/`](docs/).
 | [`generate-2fa`](functions/generate-2fa/main.py)                            | `POST`  | Secret TOTP base32, URI `otpauth://` + QR, chiffré en BDD                              |
 | [`authenticate-user`](functions/authenticate-user/main.py)                  | `POST`  | Vérifie credentials + TOTP, contrôle l'ancienneté 6 mois, bascule `expired` si périmé |
 
-Référence complète des payloads et codes erreur : [`docs/api.md`](docs/api.md).
+Référence complète des payloads et codes erreur : [`docs/fr/api.md`](docs/fr/api.md).
 Contrat machine-lisible : [`docs/openapi.yaml`](docs/openapi.yaml) (OpenAPI 3.1, généré depuis FastAPI).
 
 ## Démarrage rapide
@@ -117,8 +118,8 @@ Stack complète (MariaDB + OpenFaaS + 3 fonctions) en **une commande** via un ch
 
 Le script vérifie les prérequis (`kubectl`, `helm`), installe OpenFaaS si absent, génère les secrets (clé Fernet + mots de passe MariaDB), puis déploie le chart [`deploy/helm/cofrap`](deploy/helm/cofrap).
 
-→ Guide détaillé (K3s, minikube Windows/Linux, cluster existant, désinstallation, troubleshooting) : [`docs/installation.md`](docs/installation.md).
-→ Pipeline CI/CD et build d'images : [`docs/deployment.md`](docs/deployment.md).
+→ Guide détaillé (K3s, minikube Windows/Linux, cluster existant, désinstallation, troubleshooting) : [`docs/fr/installation.md`](docs/fr/installation.md).
+→ Pipeline CI/CD et build d'images : [`docs/fr/deployment.md`](docs/fr/deployment.md).
 
 ## Tests
 
@@ -129,7 +130,7 @@ pytest -m integration         # intégration seulement (nécessite docker compos
 pytest --cov=functions        # avec couverture
 ```
 
-→ Stratégie complète : [`docs/testing.md`](docs/testing.md).
+→ Stratégie complète : [`docs/fr/testing.md`](docs/fr/testing.md).
 
 ## CI/CD
 
@@ -138,14 +139,15 @@ Deux workflows GitHub Actions :
 - [`ci.yml`](.github/workflows/ci.yml) — sur PR et push `main` : `ruff` + `pytest` (avec service MariaDB) + build des 3 images Docker.
 - [`release.yml`](.github/workflows/release.yml) — sur tag `v*.*.*` : rejoue le CI puis **build multi-arch (amd64/arm64) + push sur GHCR** des 3 fonctions, avec SBOM et attestation de provenance.
 
-Le déploiement reste manuel (`faas-cli up`) — choix volontaire pour le PoC.
+Le déploiement reste manuel (`faas-cli up` / `helm`) — choix volontaire pour le PoC.
 
 ## Structure du dépôt
 
 ```
 .
 ├── CLAUDE.md                       # Contexte projet pour Claude Code
-├── README.md                       # ← vous êtes ici
+├── README.md                       # ← vous êtes ici (FR)
+├── README.en.md                     # version anglaise
 ├── pyproject.toml                  # Config ruff + pytest
 ├── requirements-dev.txt            # Dépendances dev (pytest, ruff, etc.)
 ├── stack.yml                       # Manifeste OpenFaaS (les 3 fonctions)
@@ -164,24 +166,30 @@ Le déploiement reste manuel (`faas-cli up`) — choix volontaire pour le PoC.
 │   ├── unit/                       # Tests unitaires (BDD mockée)
 │   └── integration/                # Tests d'intégration (vraie MariaDB)
 ├── bruno/                          # Collection API prête à l'emploi
-├── docs/                           # Documentation détaillée + openapi.yaml
-├── scripts/                        # install.sh / install.ps1 / generate-openapi.py
+├── docs/
+│   ├── fr/                         # Documentation française
+│   ├── en/                         # Documentation anglaise
+│   └── openapi.yaml                # Contrat OpenAPI (neutre)
+├── scripts/                        # install / build-images / generate-openapi
 └── .github/workflows/              # CI + Release
 ```
 
 ## Documentation
 
+Documentation bilingue : [`docs/fr/`](docs/fr/README.md) · [`docs/en/`](docs/en/README.md).
+
 | Document                                                | Contenu                                                          |
 |---------------------------------------------------------|------------------------------------------------------------------|
-| [`docs/installation.md`](docs/installation.md)          | Install pas-à-pas K3s / minikube / cluster existant, Windows + Linux |
-| [`docs/architecture.md`](docs/architecture.md)          | Vue d'ensemble, choix techniques, flux end-to-end                |
-| [`docs/api.md`](docs/api.md)                            | Référence API : payloads, codes erreur, exemples curl            |
-| [`docs/deployment.md`](docs/deployment.md)              | Procédure complète Kubernetes + OpenFaaS + MariaDB               |
-| [`docs/security.md`](docs/security.md)                  | Modèle de menace, chiffrement, rotation, secrets                 |
-| [`docs/development.md`](docs/development.md)            | Setup local, conventions, cycle de dev                           |
-| [`docs/testing.md`](docs/testing.md)                    | Stratégie de tests, exécution, fixtures                          |
-| [`docs/troubleshooting.md`](docs/troubleshooting.md)    | Erreurs fréquentes et résolutions                                |
-| [`docs/adr/`](docs/adr/)                                | Architecture Decision Records — choix structurants justifiés     |
+| [`installation.md`](docs/fr/installation.md)            | Install pas-à-pas K3s / minikube / cluster existant, Windows + Linux |
+| [`architecture.md`](docs/fr/architecture.md)            | Vue d'ensemble, choix techniques, flux end-to-end                |
+| [`api.md`](docs/fr/api.md)                              | Référence API : payloads, codes erreur, exemples curl            |
+| [`openapi.yaml`](docs/openapi.yaml)                     | Contrat machine-lisible (OpenAPI 3.1) — généré depuis FastAPI    |
+| [`deployment.md`](docs/fr/deployment.md)                | Procédure complète Kubernetes + OpenFaaS + MariaDB               |
+| [`security.md`](docs/fr/security.md)                    | Modèle de menace, chiffrement, rotation, secrets                 |
+| [`development.md`](docs/fr/development.md)              | Setup local, conventions, cycle de dev                           |
+| [`testing.md`](docs/fr/testing.md)                      | Stratégie de tests, exécution, fixtures                          |
+| [`troubleshooting.md`](docs/fr/troubleshooting.md)      | Erreurs fréquentes et résolutions                                |
+| [`adr/`](docs/fr/adr/)                                  | Architecture Decision Records — choix structurants justifiés     |
 
 ## Contribuer
 

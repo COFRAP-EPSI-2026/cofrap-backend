@@ -24,7 +24,8 @@
       "Bash(bash -n scripts/install.sh)",
       "Bash(bash -n scripts/uninstall.sh)",
       "Bash(chmod +x scripts/build-images.sh)",
-      "Bash(bash -n scripts/build-images.sh)"
+      "Bash(bash -n scripts/build-images.sh)",
+      "Bash(cd /c/Users/thiba/Documents/Environnement_dev/cofrap-backend && echo \"=== Structure docs/ ===\" && find docs -type f | sort && echo && echo \"=== READMEs racine ===\" && ls README*)"
     ]
   }
 }
