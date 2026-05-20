@@ -30,7 +30,7 @@ docs {
 
   **Les environnements écrasent ces valeurs** :
 
-  - **Local Direct (uvicorn)** — chaque fonction sur son propre port (5001/5002/5003), sans préfixe `/function/<name>`. Sélectionner cet env si tu lances `uvicorn main:app --port 500X` en local.
+  - **Local Direct** — chaque fonction sur son propre port (5001/5002/5003), sans préfixe `/function/<name>`. Sélectionner cet env si tu lances `uvicorn main:app --port 500X` en local.
   - **Local OpenFaaS Gateway** — gateway `127.0.0.1:8080` avec `/function/<name>`. Identique au défaut du collection.bru.
   - **Cluster** — URL d'un cluster déployé (à éditer dans `environments/Cluster.bru`).
 

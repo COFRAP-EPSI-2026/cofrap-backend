@@ -10,9 +10,9 @@ Installer [Bruno](https://www.usebruno.com/), puis `Open Collection` → sélect
 
 Sélectionner via le sélecteur d'environnement (haut-droite de Bruno) avant de lancer une requête.
 
-| Env                           | Quand l'utiliser                                                                                   |
+| Env                          | Quand l'utiliser                                                                                   |
 |-------------------------------|----------------------------------------------------------------------------------------------------|
-| **Local Direct (uvicorn)**    | Dev rapide d'une fonction isolée — `uvicorn main:app --port <N>` sur 5001/5002/5003                |
+| **Local Direct**              | Dev rapide d'une fonction isolée — `uvicorn main:app --port <N>` sur 5001/5002/5003                |
 | **Local OpenFaaS Gateway**    | Cluster local (K3S/minikube) avec OpenFaaS installé, gateway port-forwardé sur 127.0.0.1:8080      |
 | **Cluster**                   | Cluster déployé (cloud, homelab) — éditer l'URL                                                    |
 

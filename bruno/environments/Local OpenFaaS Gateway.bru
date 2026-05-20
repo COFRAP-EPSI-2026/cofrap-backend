@@ -1,18 +1,10 @@
 vars {
+  basic_url: http://127.0.0.1:8080
   generate_password_url: http://127.0.0.1:8080/function/generate-password
   generate_2fa_url: http://127.0.0.1:8080/function/generate-2fa
   authenticate_user_url: http://127.0.0.1:8080/function/authenticate-user
   username: michel.ranu
-  password: ~
-  totp_secret: ~
-  gendate: ~
-}
-
-docs {
-  Mode OpenFaaS local : K3S/minikube avec OpenFaaS installé, gateway port-forwardé sur 127.0.0.1:8080.
-
-  ```
-  faas-cli up -f stack.yml
-  kubectl -n openfaas port-forward svc/gateway 8080:8080
-  ```
+  password:
+  totp_secret:
+  gendate:
 }
