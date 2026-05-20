@@ -2,7 +2,7 @@
 
 Guide complet pour déployer la stack COFRAP sur **K3s**, **minikube** ou un **cluster K8s existant**, reproductible sur **Linux** et **Windows**.
 
-L'installation est orchestrée par un chart Helm unique ([`deploy/helm/cofrap`](../deploy/helm/cofrap)) et deux scripts d'amorçage : [`scripts/install.sh`](../scripts/install.sh) (bash) et [`scripts/install.ps1`](../scripts/install.ps1) (PowerShell). Les deux font exactement la même chose.
+L'installation est orchestrée par un chart Helm unique ([`deploy/helm/cofrap`](../../deploy/helm/cofrap)) et deux scripts d'amorçage : [`scripts/install.sh`](../../scripts/install.sh) (bash) et [`scripts/install.ps1`](../../scripts/install.ps1) (PowerShell). Les deux font exactement la même chose.
 
 ---
 
@@ -156,7 +156,7 @@ helm upgrade --install cofrap deploy/helm/cofrap \
   --set secrets.mariadbPassword="$MARIADB_PASSWORD" \
   --set secrets.mariadbRootPassword="$MARIADB_ROOT_PASSWORD" \
   --set functions.registry=ghcr.io/<votre-org> \
-  --set functions.version=0.2.0 \
+  --set functions.version=2026.2.0 \
   --set mariadb.persistence.storageClassName=longhorn \
   --wait
 ```
@@ -213,7 +213,7 @@ curl -s -X POST http://127.0.0.1:8080/function/generate-2fa \
      -d '{"username":"michel.ranu"}' | jq
 ```
 
-Plus simple : utiliser la [collection Bruno](../bruno/) en sélectionnant l'environnement `Local OpenFaaS Gateway`.
+Plus simple : utiliser la [collection Bruno](../../bruno/) en sélectionnant l'environnement `Local OpenFaaS Gateway`.
 
 ---
 
@@ -231,7 +231,7 @@ PURGE_OPENFAAS=1 ./scripts/uninstall.sh      # supprime tout, OpenFaaS inclus
 
 Le script :
 1. `helm uninstall cofrap`
-2. Supprime les `Secret`s `mariadb-password` et `encryption-key` dans `openfaas-fn` (marqués `helm.sh/resource-policy: keep` pour éviter une suppression accidentelle pendant un `helm upgrade`).
+2. Supprime les `Secret`s `mariadb-password` et `encryption-key` dans `openfaas-fn`.
 3. Supprime les PVC MariaDB (sinon les données restent).
 4. Supprime le namespace `cofrap`.
 
@@ -306,7 +306,7 @@ Quelques pointeurs rapides :
 | Symptôme                                              | Solution                                                    |
 |-------------------------------------------------------|-------------------------------------------------------------|
 | PVC MariaDB en `Pending`                              | Le cluster n'a pas de storageClass par défaut. Voir [`troubleshooting.md`](troubleshooting.md). |
-| Fonctions en `ErrImagePull` / `ImagePullBackOff`      | Les images n'existent pas sur GHCR (aucun tag git poussé). Builder localement avec [`./scripts/build-images.sh`](../scripts/build-images.sh) (ou `.ps1` sur Windows), puis `helm upgrade --reuse-values --set functions.pullPolicy=IfNotPresent` + `kubectl -n openfaas-fn rollout restart deployment -l faas_function`. |
+| Fonctions en `ErrImagePull` / `ImagePullBackOff`      | Les images n'existent pas sur GHCR (aucun tag git poussé). Builder localement avec [`./scripts/build-images.sh`](../../scripts/build-images.sh) (ou `.ps1` sur Windows), puis `helm upgrade --reuse-values --set functions.pullPolicy=IfNotPresent` + `kubectl -n openfaas-fn rollout restart deployment -l faas_function`. |
 | Gateway répond `error finding function <name>.openfaas-fn` (404) | Les fonctions ne sont pas (encore) déployées comme Deployments+Services labellisés. Réinstaller via `./scripts/install.sh` ou `helm upgrade --install cofrap deploy/helm/cofrap ...`. Vérifier : `kubectl -n openfaas-fn get deploy -l faas_function`. |
 | Erreur Helm `enabling 'operator.create' is only supported for OpenFaaS Pro` | C'est attendu — `operator.create` exige OpenFaaS Pro. Le chart `cofrap` utilise des Deployments classiques et ne nécessite PAS l'operator. Ne pas passer ce flag à `openfaas/openfaas`. |
 | `secrets.encryptionKey est obligatoire`               | Lancer via le script ou passer les 3 `--set secrets.*` à la main. |

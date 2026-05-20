@@ -20,6 +20,19 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: cofrap-phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mariadb
+      PMA_USER: ${DB_USER:-cofrap}
+      PMA_PASSWORD: ${DB_PASSWORD:-cofrap_dev}
+    ports:
+      - "8080:80"
+    depends_on:
+      mariadb:
+        condition: service_healthy
 
 volumes:
   mariadb_data:

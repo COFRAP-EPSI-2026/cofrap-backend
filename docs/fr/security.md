@@ -46,6 +46,14 @@ La clé (32 bytes base64 url-safe) vit uniquement dans le secret OpenFaaS `encry
 - Le **secret TOTP** sort de `generate-2fa` sous deux formes redondantes (URI `otpauth://` + QR PNG). L'URI contient le secret en clair (base32) — c'est le standard ; la sécurité repose sur le canal TLS du gateway.
 - **TLS impératif en production** côté gateway OpenFaaS (cert-manager + Let's Encrypt via `arkade install openfaas-ingress`).
 
+## CORS
+
+Les 3 fonctions activent le `CORSMiddleware` de FastAPI pour que le frontend (servi depuis une autre origine) puisse les appeler depuis le navigateur. Origines pilotées par `CORS_ALLOW_ORIGINS` (`*` par défaut, ou liste explicite séparée par virgules).
+
+- L'API **n'utilise aucun cookie** : l'authentification passe par le corps JSON. `allow_credentials` est donc désactivé — ce qui évite le piège « `*` + credentials » interdit par la spec CORS.
+- En **production**, restreindre `CORS_ALLOW_ORIGINS` à l'origine réelle du frontend (ex. `https://app.cofrap.example.com`) plutôt que `*`.
+- Le CORS est une protection **navigateur**, pas un contrôle d'accès serveur : il ne remplace ni l'authentification ni le rate limiting. Un client non-navigateur (curl, script) ignore le CORS.
+
 ## Rotation à 6 mois
 
 Implémentée au niveau de la fonction `authenticate-user`, pas via un job cron :
@@ -72,7 +80,7 @@ Variable d'environnement `EXPIRY_SECONDS` pour overrider la fenêtre en test (ut
 | `mariadb-password`  | Secret OpenFaaS                             | `db.py` à chaque ouverture de connexion |
 | MariaDB credentials | `Secret` Kubernetes `mariadb-credentials`   | Le pod MariaDB (`envFrom`)      |
 
-Aucun secret n'est commité — voir [`deploy/mariadb/secret.yaml`](../deploy/mariadb/secret.yaml) qui contient des **placeholders à éditer** avant `kubectl apply`.
+Aucun secret n'est commité — voir [`deploy/mariadb/secret.yaml`](../../deploy/mariadb/secret.yaml) qui contient des **placeholders à éditer** avant `kubectl apply`.
 
 Le pattern `_read_secret(name)` (cf. `functions/*/crypto.py`) :
 1. Lit `/var/openfaas/secrets/<name>` si présent (cas OpenFaaS prod).
@@ -81,7 +89,7 @@ Le pattern `_read_secret(name)` (cf. `functions/*/crypto.py`) :
 ## Conteneurs
 
 - Image Python `slim` minimaliste.
-- Utilisateur non-root (`app`) — créé dans le `Dockerfile`.
+- Utilisateur non-root (UID `10001`) — créé dans le `Dockerfile`, déclaré numériquement pour que Kubelet puisse vérifier `runAsNonRoot`.
 - `HEALTHCHECK` Docker sur `/healthz` (non utilisé par Kubernetes mais utile en `docker run` direct).
 - of-watchdog en mode HTTP — pas de fork-exec par requête, plus performant et plus simple à auditer.
 

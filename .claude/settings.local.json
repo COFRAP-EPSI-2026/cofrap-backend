@@ -24,7 +24,13 @@
       "Bash(bash -n scripts/install.sh)",
       "Bash(bash -n scripts/uninstall.sh)",
       "Bash(chmod +x scripts/build-images.sh)",
-      "Bash(bash -n scripts/build-images.sh)"
+      "Bash(bash -n scripts/build-images.sh)",
+      "Bash(cd /c/Users/thiba/Documents/Environnement_dev/cofrap-backend && echo \"=== Structure docs/ ===\" && find docs -type f | sort && echo && echo \"=== READMEs racine ===\" && ls README*)",
+      "Bash(sed -i 's#functions.version=0\\\\.2\\\\.0#functions.version=2026.2.0#' docs/fr/installation.md docs/en/installation.md)",
+      "Bash(sed -i 's#<function>:0\\\\.1\\\\.0#<function>:2026.1.0#g; s#`v0\\\\.1\\\\.0`#`v2026.1.0`#g' docs/en/installation.md docs/fr/troubleshooting.md docs/en/troubleshooting.md)",
+      "Bash(.venv/Scripts/python.exe -m pip show fastapi pydantic)",
+      "Bash(.venv/Scripts/python.exe -c \"import yaml; yaml.safe_load\\(open\\('.github/workflows/release.yml',encoding='utf-8'\\)\\); print\\('release.yml : YAML valide'\\)\")",
+      "Bash(.venv/Scripts/python.exe -c 'import yaml; yaml.safe_load\\(open\\('\\\\''.github/workflows/__TRACKED_VAR__.yml'\\\\'',encoding='\\\\''utf-8'\\\\''\\)\\); print\\('\\\\''__TRACKED_VAR__.yml OK'\\\\''\\)')"
     ]
   }
 }

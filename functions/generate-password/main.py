@@ -1,3 +1,4 @@
+import os
 import secrets
 import string
 import time
@@ -5,6 +6,7 @@ import time
 from crypto import encrypt
 from db import get_connection
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from qr import make_qr_png_base64
 
@@ -14,8 +16,25 @@ ALPHABET = string.ascii_letters + string.digits + SPECIALS
 
 app = FastAPI(
     title="cofrap-generate-password",
-    version="0.1.0",
+    version="2026.2.0",  # x-release-please-version
     summary="Génère un mot de passe à 24 caractères et le transmet via QR code.",
+)
+
+
+def _cors_origins() -> list[str]:
+    """Origines autorisées (CORS). `CORS_ALLOW_ORIGINS` = `*` (défaut) ou liste séparée par virgules."""
+    raw = os.getenv("CORS_ALLOW_ORIGINS", "*").strip()
+    if raw == "*":
+        return ["*"]
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins(),
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 

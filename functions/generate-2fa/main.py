@@ -5,6 +5,7 @@ import pyotp
 from crypto import encrypt
 from db import get_connection
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from qr import make_qr_png_base64
 
@@ -12,8 +13,25 @@ ISSUER = os.getenv("TOTP_ISSUER", "COFRAP")
 
 app = FastAPI(
     title="cofrap-generate-2fa",
-    version="0.1.0",
+    version="2026.2.0",  # x-release-please-version
     summary="Génère un secret TOTP (RFC 6238) et son QR code otpauth:// pour un utilisateur existant.",
+)
+
+
+def _cors_origins() -> list[str]:
+    """Origines autorisées (CORS). `CORS_ALLOW_ORIGINS` = `*` (défaut) ou liste séparée par virgules."""
+    raw = os.getenv("CORS_ALLOW_ORIGINS", "*").strip()
+    if raw == "*":
+        return ["*"]
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins(),
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 

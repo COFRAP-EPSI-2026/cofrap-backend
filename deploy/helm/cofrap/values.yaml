@@ -49,17 +49,20 @@ mariadb:
       cpu: "1"
       memory: 1Gi
 
-# -- Fonctions OpenFaaS (créées comme CRD Function dans `openfaas.functionNamespace`).
+# -- Fonctions OpenFaaS (créées comme Deployment + Service dans `openfaas.functionNamespace`).
 functions:
   enabled: true
   # Registry + tag des images. Override pour pointer vers ton propre fork.
   registry: ghcr.io/cofrap-epsi-2026
-  version: "0.1.0"
+  version: "2026.2.0"  # x-release-please-version
   pullPolicy: IfNotPresent
 
   # Variables d'environnement passées à toutes les fonctions.
   totpIssuer: COFRAP
   expirySeconds: "15552000"  # 6 mois
+  # CORS — origines autorisées à appeler l'API depuis un navigateur.
+  # "*" (défaut) ou liste séparée par virgules : "https://app.cofrap.example.com,http://localhost:5173"
+  corsAllowOrigins: "*"
 
   # Timeouts of-watchdog.
   timeouts:

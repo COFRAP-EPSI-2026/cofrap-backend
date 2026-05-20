@@ -4,7 +4,7 @@ Chaque fonction est invoquée via le gateway OpenFaaS sur `POST /function/<name>
 
 URL de base : `{{gateway}}/function/`
 
-> **Contrat machine-lisible** : [`openapi.yaml`](openapi.yaml) (OpenAPI 3.1) — généré automatiquement depuis les apps FastAPI par [`scripts/generate-openapi.py`](../scripts/generate-openapi.py). À ouvrir dans [Swagger Editor](https://editor.swagger.io/), [Redocly](https://redocly.github.io/redoc/) ou n'importe quel client API (Bruno, Postman, Insomnia) supportant l'import OpenAPI.
+> **Contrat machine-lisible** : [`openapi.yaml`](../openapi.yaml) (OpenAPI 3.1) — généré automatiquement depuis les apps FastAPI par [`scripts/generate-openapi.py`](../../scripts/generate-openapi.py). À ouvrir dans [Swagger Editor](https://editor.swagger.io/), [Redocly](https://redocly.github.io/redoc/) ou n'importe quel client API (Bruno, Postman, Insomnia) supportant l'import OpenAPI.
 
 ---
 
@@ -151,6 +151,17 @@ Chaque fonction expose `GET /healthz` qui renvoie `{"status": "ok"}`. C'est le s
 
 ---
 
+## CORS
+
+Les 3 fonctions renvoient les en-têtes CORS — le frontend (servi depuis une autre origine) peut donc les appeler depuis le navigateur. Les origines autorisées sont pilotées par la variable d'environnement `CORS_ALLOW_ORIGINS` :
+
+- `*` (défaut) — toutes les origines (pratique en dev et pour le PoC).
+- Liste séparée par virgules — ex. `https://app.cofrap.example.com,http://localhost:5173` pour restreindre en production.
+
+L'API n'utilise pas de cookies (l'authentification passe par le corps JSON), donc `allow_credentials` est désactivé — ce qui rend le défaut `*` sûr.
+
+---
+
 ## Tester l'API
 
-Une collection Bruno complète est fournie dans [`bruno/`](../bruno/) — flux nominal et cas d'erreur prêts à l'emploi, avec calcul TOTP côté client pour automatiser le test d'authentification.
+Une collection Bruno complète est fournie dans [`bruno/`](../../bruno/) — flux nominal et cas d'erreur prêts à l'emploi, avec calcul TOTP côté client pour automatiser le test d'authentification.

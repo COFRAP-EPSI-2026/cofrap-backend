@@ -69,7 +69,7 @@ def _base_spec() -> dict:
         "openapi": "3.1.0",
         "info": {
             "title": "COFRAP Backend API",
-            "version": "0.1.0",
+            "version": "2026.2.0",  # x-release-please-version
             "summary": "PoC COFRAP — génération de mot de passe, 2FA TOTP et authentification.",
             "description": (
                 "API serverless (OpenFaaS) du PoC COFRAP. "

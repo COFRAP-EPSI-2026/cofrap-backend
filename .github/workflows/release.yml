@@ -24,6 +24,9 @@ jobs:
     name: Build & push ${{ matrix.function }}
     needs: lint-test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         function: [generate-password, generate-2fa, authenticate-user]
@@ -42,7 +45,9 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          # GITHUB_TOKEN auto-fourni : suffit pour pousser sur ghcr.io/<owner-du-repo>
+          # grâce au bloc `permissions: packages: write` ci-dessus. Pas besoin de PAT.
+          password: ${{ secrets.GITHB_TOKEN }}
 
       - name: Image metadata
         id: meta

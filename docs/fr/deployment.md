@@ -25,7 +25,7 @@ kubectl port-forward -n openfaas svc/gateway 8080:8080 & echo "$PASSWORD" | faas
 
 ## 2. Déployer la stack (recommandé : chart Helm)
 
-Un seul chart Helm — [`deploy/helm/cofrap`](../deploy/helm/cofrap) — déploie MariaDB, crée les secrets OpenFaaS dans `openfaas-fn` et les 3 CRD `Function`. Procédure complète : [`installation.md`](installation.md).
+Un seul chart Helm — [`deploy/helm/cofrap`](../../deploy/helm/cofrap) — déploie MariaDB, crée les secrets OpenFaaS dans `openfaas-fn` et les 3 fonctions (1 Deployment + 1 Service chacune). Procédure complète : [`installation.md`](installation.md).
 
 ```bash
 ENCRYPTION_KEY="$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')"
@@ -44,13 +44,13 @@ Vérification :
 
 ```bash
 kubectl -n cofrap get pods,svc,pvc
-kubectl -n openfaas-fn get functions.openfaas.com
+kubectl -n openfaas-fn get deploy,svc -l faas_function
 curl -s http://127.0.0.1:8080/function/generate-password/healthz   # après port-forward
 ```
 
 ## 2bis. Alternative : déploiement manuel sans Helm
 
-Si tu préfères `kubectl apply` direct (ou si tu n'as pas Helm), les manifestes bruts existent dans [`deploy/mariadb/`](../deploy/mariadb/) :
+Si tu préfères `kubectl apply` direct (ou si tu n'as pas Helm), les manifestes bruts existent dans [`deploy/mariadb/`](../../deploy/mariadb/) :
 
 ```bash
 kubectl apply -f deploy/mariadb/namespace.yaml
@@ -107,6 +107,7 @@ Tout ce qui n'est pas un secret se règle dans `stack.yml` (`environment:` par f
 | `DB_USER`          | `cofrap`                            | Utilisateur applicatif (pas root !)                 |
 | `TOTP_ISSUER`      | `COFRAP`                            | Nom affiché dans Google Authenticator               |
 | `EXPIRY_SECONDS`   | `15552000` (6 mois)                 | Fenêtre de validité — réduire pour tester l'expiry  |
+| `CORS_ALLOW_ORIGINS` | `*`                               | Origines autorisées à appeler l'API depuis un navigateur — `*` ou liste séparée par virgules |
 | `read_timeout`/`write_timeout`/`exec_timeout` | `30s`     | Limites of-watchdog                                 |
 
 ## Mises à jour
@@ -117,11 +118,15 @@ Tout ce qui n'est pas un secret se règle dans `stack.yml` (`environment:` par f
 
 ## CI/CD
 
-→ Pipeline GitHub Actions documenté dans la section CI/CD du [README racine](../README.md#cicd) et codé dans [`.github/workflows/`](../.github/workflows/).
+→ Pipeline GitHub Actions codé dans [`.github/workflows/`](../../.github/workflows/).
 
-Sur un tag `v*.*.*`, le workflow `release.yml` :
-1. Rejoue la suite CI complète (lint + tests)
-2. Build les 3 images multi-arch (amd64 + arm64)
-3. Push sur `ghcr.io/<org>/<function>:<version>` avec SBOM et attestation de provenance
+> **Prérequis Release Please** (une seule fois) : `Settings → Actions → General → Workflow permissions` → cocher **« Allow GitHub Actions to create and approve pull requests »**. Sans ça : erreur `GitHub Actions is not permitted to create or approve pull requests`. Sur un repo d'organisation, activer d'abord ce réglage au niveau de l'org.
 
-Le déploiement sur le cluster reste **manuel** (`faas-cli up`) — c'est cohérent avec un PoC où chaque release est validée par l'équipe avant mise en service.
+Les releases sont automatisées par **Release Please** (workflow `release-please.yml`) :
+1. Les commits Conventional (`feat:`, `fix:`) poussés sur `main` alimentent une « Release PR ».
+2. Le merge de cette PR crée le tag `vX.Y.Z` + la GitHub Release et bumpe tous les fichiers de version.
+3. Le même workflow build les 3 images multi-arch (amd64 + arm64) et les pousse sur `ghcr.io/<org>/<function>:<version>` avec SBOM et attestation de provenance.
+
+Le workflow `release.yml` reste disponible pour un tag `v*.*.*` posé à la main (filet de secours).
+
+Le déploiement sur le cluster reste **manuel** (`faas-cli up` ou `helm upgrade`) — c'est cohérent avec un PoC où chaque release est validée par l'équipe avant mise en service.

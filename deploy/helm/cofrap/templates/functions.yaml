@@ -56,6 +56,8 @@ spec:
               value: {{ $root.Values.mariadb.database | quote }}
             - name: DB_USER
               value: {{ $root.Values.mariadb.user | quote }}
+            - name: CORS_ALLOW_ORIGINS
+              value: {{ $root.Values.functions.corsAllowOrigins | quote }}
             - name: read_timeout
               value: {{ $root.Values.functions.timeouts.read | quote }}
             - name: write_timeout

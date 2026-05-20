@@ -87,7 +87,7 @@ pytest tests/unit/test_generate_password.py::test_password_meets_complexity -v
 1. Modifier `functions/<fn>/main.py` ou un module partagé.
 2. `ruff check --fix . && ruff format .`
 3. `pytest` (vert ?)
-4. Tester en local : `uvicorn main:app --reload` puis curl ou la [collection Bruno](../bruno/).
+4. Tester en local : `uvicorn main:app --reload` puis curl ou la [collection Bruno](../../bruno/).
 5. Commit + PR. La CI rejoue lint + tests + build des 3 images Docker.
 
 ## Mettre à jour les modules partagés
@@ -98,7 +98,7 @@ Un linter custom ou un pre-commit hook peut être ajouté pour détecter le drif
 
 ## Outils utiles
 
-- [Bruno](https://www.usebruno.com/) pour tester l'API à la main (collection prête dans [`bruno/`](../bruno/)).
+- [Bruno](https://www.usebruno.com/) pour tester l'API à la main (collection prête dans [`bruno/`](../../bruno/)).
 - [DBeaver](https://dbeaver.io/) ou la CLI `mariadb` pour inspecter la BDD :
   ```bash
   docker compose exec mariadb mariadb -ucofrap -pcofrap_dev cofrap
