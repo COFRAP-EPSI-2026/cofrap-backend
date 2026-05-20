@@ -4,7 +4,7 @@
 openapi: 3.1.0
 info:
   title: COFRAP Backend API
-  version: 0.1.0
+  version: 2026.1.0
   summary: PoC COFRAP — génération de mot de passe, 2FA TOTP et authentification.
   description: API serverless (OpenFaaS) du PoC COFRAP. Trois fonctions Python/FastAPI exposées via le gateway OpenFaaS, persistance
     en MariaDB, chiffrement at-rest des credentials (Fernet).

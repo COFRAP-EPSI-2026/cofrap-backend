@@ -27,6 +27,7 @@
 - [Déploiement sur Kubernetes](#déploiement-sur-kubernetes)
 - [Tests](#tests)
 - [CI/CD](#cicd)
+- [Versioning](#versioning)
 - [Structure du dépôt](#structure-du-dépôt)
 - [Documentation](#documentation)
 - [Contribuer](#contribuer)
@@ -141,6 +142,18 @@ Deux workflows GitHub Actions :
 
 Le déploiement reste manuel (`faas-cli up` / `helm`) — choix volontaire pour le PoC.
 
+## Versioning
+
+Versioning **calendaire** `ANNÉE.MINEUR.CORRECTIF` — version courante : **2026.1.0**.
+
+Une release se déclenche en poussant un tag git `vYYYY.MINOR.PATCH` :
+
+```bash
+git tag v2026.1.0 && git push origin v2026.1.0
+```
+
+Le workflow `release.yml` rejoue la CI puis build et pousse les 3 images sur `ghcr.io/cofrap-epsi-2026/<function>:2026.1.0`. Historique complet : [`CHANGELOG.md`](CHANGELOG.md).
+
 ## Structure du dépôt
 
 ```
@@ -148,6 +161,7 @@ Le déploiement reste manuel (`faas-cli up` / `helm`) — choix volontaire pour 
 ├── CLAUDE.md                       # Contexte projet pour Claude Code
 ├── README.md                       # ← vous êtes ici (FR)
 ├── README.en.md                     # version anglaise
+├── CHANGELOG.md                     # historique des versions
 ├── pyproject.toml                  # Config ruff + pytest
 ├── requirements-dev.txt            # Dépendances dev (pytest, ruff, etc.)
 ├── stack.yml                       # Manifeste OpenFaaS (les 3 fonctions)

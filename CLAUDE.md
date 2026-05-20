@@ -116,7 +116,7 @@ python scripts/generate-openapi.py    # → docs/openapi.yaml
 ## Conventions critiques pour Claude
 
 - **Modules partagés dupliqués** : `db.py`, `crypto.py`, `qr.py` existent en copie dans chaque fonction. Si tu modifies l'un, répercute dans les **3** dossiers (`generate-password`, `generate-2fa`, `authenticate-user`). Justification : [`docs/fr/adr/0006-duplicate-shared-utilities.md`](docs/fr/adr/0006-duplicate-shared-utilities.md).
-- **Documentation bilingue en miroir** : toute modif d'un fichier `docs/fr/<x>.md` doit être répercutée dans `docs/en/<x>.md` (et inversement). Les deux arbres ont la même structure. `docs/openapi.yaml` est neutre (généré, pas de version par langue).
+- **Documentation bilingue en miroir — RÈGLE PERMANENTE** : `docs/fr/` et `docs/en/` ont une structure identique. **Toute** modification de doc se fait dans les **deux** langues dans le même changement — jamais l'une sans l'autre. Idem pour `README.md` (FR) et `README.en.md` (EN). `docs/openapi.yaml` est neutre (généré, pas de version par langue). Si tu touches un contenu documentaire et que tu ne mets à jour qu'une langue, le travail est incomplet.
 - **Déploiement = Deployments K8s, pas CRD `Function`** : OpenFaaS Community ne supporte pas l'operator (réservé Pro). Le chart crée des `Deployment` + `Service` labellisés `faas_function=<name>` dans `openfaas-fn`. Ne pas réintroduire de CRD `openfaas.com/v1`.
 - **Fallback env vars** : `_read_secret(name)` lit `/var/openfaas/secrets/<name>` en prod, fallback sur la variable d'env `<NAME_UPPER_SNAKE>` pour dev/CI. Quand tu ajoutes un nouveau secret, suis le même pattern.
 - **Tests d'intégration** = MariaDB **réelle** (pas de mock). Si tu changes une requête SQL, le test d'intégration doit la valider. Voir `tests/integration/test_full_flow.py`.
@@ -132,7 +132,23 @@ python scripts/generate-openapi.py    # → docs/openapi.yaml
 - [`ci.yml`](.github/workflows/ci.yml) : `ruff` + `pytest` (avec service MariaDB 11) + build des 3 images Docker (sans push). Réutilisable via `workflow_call` par `release.yml`.
 - [`release.yml`](.github/workflows/release.yml) : sur tag `v*.*.*`, rejoue le CI puis matrix sur les 3 fonctions → build multi-arch amd64/arm64 + push sur `ghcr.io/<org>/<function>:<version>` avec `provenance: true` et `sbom: true`.
 
-Le déploiement sur cluster est **manuel** (`faas-cli up`) — pas de CD automatique.
+Le déploiement sur cluster est **manuel** (`faas-cli up` / `helm`) — pas de CD automatique.
+
+## Versioning
+
+Versioning **calendaire** `YYYY.MINOR.PATCH` (ex. `2026.1.0`). Une release = un tag git `vYYYY.MINOR.PATCH`. Historique dans [`CHANGELOG.md`](CHANGELOG.md).
+
+La version est portée par **plusieurs fichiers qui doivent rester synchronisés** — un bump les touche tous ensemble :
+
+- `pyproject.toml` (`version`)
+- `deploy/helm/cofrap/Chart.yaml` (`version` **et** `appVersion`)
+- `deploy/helm/cofrap/values.yaml` (`functions.version`)
+- `stack.yml` (les 3 tags `image:`)
+- `functions/*/main.py` (`version=` de `FastAPI(...)`) × 3
+- `scripts/generate-openapi.py` (`"version"` dans `_base_spec`)
+- `scripts/build-images.sh` + `.ps1` (défaut `TAG` / `$Tag`)
+- `docs/openapi.yaml` → régénéré via `python scripts/generate-openapi.py`
+- `CHANGELOG.md` (nouvelle entrée) + les deux README (section Versioning)
 
 ## Quand tu finis quelque chose
 
@@ -143,4 +159,6 @@ Si tu ajoutes/modifies du code applicatif :
 3. Si tu as touché un `main.py` ou un modèle Pydantic : `python scripts/generate-openapi.py` pour rafraîchir `docs/openapi.yaml`.
 4. Si tu touches une fonction, vérifier que la documentation correspondante reste à jour, **dans les deux langues** : `docs/{fr,en}/api.md` (payload/erreurs), `docs/{fr,en}/architecture.md` (si flux modifié), `docs/{fr,en}/security.md` (si traitement des secrets modifié).
 5. Si tu ajoutes un nouveau choix structurant, ajouter une ADR dans `docs/fr/adr/` **et** `docs/en/adr/`.
-6. Pas de README/docs autogénérés sans demande explicite — le PoC veut rester lisible et concis.
+6. Si tu changes la version, suivre la liste de la section [Versioning](#versioning) — tous les fichiers d'un coup — et ajouter une entrée `CHANGELOG.md`.
+7. Toute modif documentaire est faite dans `docs/fr/` **et** `docs/en/` (et `README.md` + `README.en.md`) dans le même changement.
+8. Pas de README/docs autogénérés sans demande explicite — le PoC veut rester lisible et concis.

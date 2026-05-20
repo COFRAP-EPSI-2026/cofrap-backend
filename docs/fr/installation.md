@@ -156,7 +156,7 @@ helm upgrade --install cofrap deploy/helm/cofrap \
   --set secrets.mariadbPassword="$MARIADB_PASSWORD" \
   --set secrets.mariadbRootPassword="$MARIADB_ROOT_PASSWORD" \
   --set functions.registry=ghcr.io/<votre-org> \
-  --set functions.version=0.2.0 \
+  --set functions.version=2026.2.0 \
   --set mariadb.persistence.storageClassName=longhorn \
   --wait
 ```

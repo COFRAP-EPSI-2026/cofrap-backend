@@ -47,7 +47,7 @@ The `slim` Python image + dependencies weighs ~150 MB. To go further: switch to 
 
 ### Functions in `ErrImagePull` / `ImagePullBackOff`
 
-The `ghcr.io/cofrap-epsi-2026/<function>:0.1.0` images are only published on a **git tag `v*.*.*`** (via the [`release.yml`](../../.github/workflows/release.yml) workflow). On a fork, or before pushing a tag, those images don't exist → ImagePullBackOff when the pods start.
+The `ghcr.io/cofrap-epsi-2026/<function>:2026.1.0` images are only published on a **git tag `v*.*.*`** (via the [`release.yml`](../../.github/workflows/release.yml) workflow). On a fork, or before pushing a tag, those images don't exist → ImagePullBackOff when the pods start.
 
 Build locally and load into the cluster:
 

@@ -27,6 +27,7 @@
 - [Deploying to Kubernetes](#deploying-to-kubernetes)
 - [Tests](#tests)
 - [CI/CD](#cicd)
+- [Versioning](#versioning)
 - [Repository layout](#repository-layout)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
@@ -141,6 +142,18 @@ Two GitHub Actions workflows:
 
 Deployment stays manual (`faas-cli up` / `helm`) — a deliberate choice for the PoC.
 
+## Versioning
+
+**Calendar** versioning `YEAR.MINOR.PATCH` — current version: **2026.1.0**.
+
+A release is triggered by pushing a git tag `vYYYY.MINOR.PATCH`:
+
+```bash
+git tag v2026.1.0 && git push origin v2026.1.0
+```
+
+The `release.yml` workflow replays CI then builds and pushes the 3 images to `ghcr.io/cofrap-epsi-2026/<function>:2026.1.0`. Full history: [`CHANGELOG.md`](CHANGELOG.md).
+
 ## Repository layout
 
 ```
@@ -148,6 +161,7 @@ Deployment stays manual (`faas-cli up` / `helm`) — a deliberate choice for the
 ├── CLAUDE.md                       # Project context for Claude Code
 ├── README.md                       # French version
 ├── README.en.md                     # ← you are here (EN)
+├── CHANGELOG.md                     # version history
 ├── pyproject.toml                  # ruff + pytest config
 ├── requirements-dev.txt            # Dev dependencies (pytest, ruff, etc.)
 ├── stack.yml                       # OpenFaaS manifest (the 3 functions)

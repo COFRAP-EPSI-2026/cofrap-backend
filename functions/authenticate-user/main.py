@@ -11,7 +11,7 @@ SIX_MONTHS_SECONDS = int(os.getenv("EXPIRY_SECONDS", str(60 * 60 * 24 * 30 * 6))
 
 app = FastAPI(
     title="cofrap-authenticate-user",
-    version="0.1.0",
+    version="2026.1.0",
     summary="Authentifie un utilisateur (login + password + TOTP), contrôle l'expiration à 6 mois.",
 )
 
