@@ -18,6 +18,13 @@ La même version est portée par : `pyproject.toml`, `deploy/helm/cofrap/Chart.y
 
 ---
 
+## [2026.2.0](https://github.com/COFRAP-EPSI-2026/cofrap-backend/compare/v2026.1.2...v2026.2.0) (2026-05-20)
+
+
+### Features
+
+* ajout de la prise en charge de Release Please pour l'automatisation des versions et mise à jour de la version à 2026.1.2 dans tous les fichiers pertinents ([734f9b3](https://github.com/COFRAP-EPSI-2026/cofrap-backend/commit/734f9b3ba1cefa86391decf32557c74535107592))
+
 ## [2026.1.2] — 2026-05-20
 
 Aucun changement du schéma BDD. Le contrat d'API est inchangé ; seuls des en-têtes CORS sont ajoutés aux réponses.
