@@ -9,6 +9,12 @@ name: Release Please
 #
 # Le build est dans CE workflow (pas dans release.yml) : un tag créé par
 # GITHUB_TOKEN ne déclenche pas d'autre workflow — on enchaîne donc ici même.
+#
+# PRÉREQUIS (une seule fois) : Settings > Actions > General > Workflow permissions
+#   → cocher « Allow GitHub Actions to create and approve pull requests ».
+#   Sans ça : « GitHub Actions is not permitted to create or approve pull requests ».
+#   Repo dans une org : activer d'abord au niveau de l'organisation si la case est grisée.
+#   Alternative : passer un PAT via `token:` à l'action release-please ci-dessous.
 
 on:
   push:

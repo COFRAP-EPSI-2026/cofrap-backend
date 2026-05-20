@@ -120,6 +120,8 @@ Tout ce qui n'est pas un secret se règle dans `stack.yml` (`environment:` par f
 
 → Pipeline GitHub Actions codé dans [`.github/workflows/`](../../.github/workflows/).
 
+> **Prérequis Release Please** (une seule fois) : `Settings → Actions → General → Workflow permissions` → cocher **« Allow GitHub Actions to create and approve pull requests »**. Sans ça : erreur `GitHub Actions is not permitted to create or approve pull requests`. Sur un repo d'organisation, activer d'abord ce réglage au niveau de l'org.
+
 Les releases sont automatisées par **Release Please** (workflow `release-please.yml`) :
 1. Les commits Conventional (`feat:`, `fix:`) poussés sur `main` alimentent une « Release PR ».
 2. Le merge de cette PR crée le tag `vX.Y.Z` + la GitHub Release et bumpe tous les fichiers de version.
