@@ -46,8 +46,8 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           # Le GITHUB_TOKEN auto est refusé par la politique Packages de l'org :
-          # on passe par un PAT (secret GITHB_TOKEN, scope write:packages).
-          password: ${{ secrets.GITHB_TOKEN }}
+          # on passe par un PAT (secret GHCR_PAT_TOKEN, scope write:packages).
+          password: ${{ secrets.GHCR_PAT_TOKEN }}
 
       - name: Image metadata
         id: meta
