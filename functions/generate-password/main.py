@@ -16,7 +16,7 @@ ALPHABET = string.ascii_letters + string.digits + SPECIALS
 
 app = FastAPI(
     title="cofrap-generate-password",
-    version="2026.2.0",  # x-release-please-version
+    version="2026.3.0",  # x-release-please-version
     summary="Génère un mot de passe à 24 caractères et le transmet via QR code.",
 )
 
