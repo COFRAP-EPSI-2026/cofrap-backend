@@ -121,7 +121,19 @@ pytest tests/unit/test_generate_password.py::test_password_meets_complexity -v
 2. `ruff check --fix . && ruff format .`
 3. `pytest` (green?)
 4. Test locally: `uvicorn main:app --reload` then curl or the [Bruno collection](../../bruno/).
-5. Commit + PR. CI replays lint + tests + build of the 3 Docker images.
+5. Push to `dev` (or open a PR). CI validates automatically — see below.
+
+## Continuous integration and releases
+
+Three GitHub Actions workflows, easy to follow:
+
+| Workflow | Trigger | Role |
+|----------|---------|------|
+| `ci.yml` | PR to `dev` or `main` | **Validation**: `ruff` + `pytest` + build of the 3 images (no push) |
+| `pre-release.yml` | push to `dev` | Replays `ci.yml`; if green, **publishes the `:dev` images** (+ `:dev-<sha>`) to GHCR |
+| `release-please.yml` | push to `main` | **Stable release**: Release PR → merge → tag `vX.Y.Z` + images `2026.X.Y` + `latest` |
+
+Calendar versioning automated by Release Please (`feat:` → minor bump, `fix:` → patch) — never bump the version by hand (see [`CLAUDE.md`](../../CLAUDE.md)). Cluster deployment stays manual: [`scripts/prod/install.sh`](../../scripts/prod/install.sh) or `helm`.
 
 ## Updating shared modules
 
