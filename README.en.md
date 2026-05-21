@@ -111,10 +111,10 @@ The full stack (MariaDB + OpenFaaS + 3 functions) in **one command** via a dedic
 
 ```bash
 # Linux / macOS / WSL / Git Bash
-./scripts/install.sh
+./scripts/prod/install.sh
 
 # Windows PowerShell
-./scripts/install.ps1
+./scripts/prod/install.ps1
 ```
 
 The script checks the prerequisites (`kubectl`, `helm`), installs OpenFaaS if absent, generates the secrets (Fernet key + MariaDB passwords), then deploys the [`deploy/helm/cofrap`](deploy/helm/cofrap) chart.
@@ -187,8 +187,11 @@ Releases are **automated by [Release Please](https://github.com/googleapis/relea
 │   ├── fr/                         # French documentation
 │   ├── en/                         # English documentation
 │   └── openapi.yaml                # OpenAPI contract (language-neutral)
-├── scripts/                        # install / build-images / generate-openapi
-└── .github/workflows/              # CI + Release
+├── scripts/
+│   ├── prod/                       # cluster deployment (install / uninstall / build-images)
+│   ├── dev/                        # local dev (docker-compose control)
+│   └── generate-openapi.py         # OpenAPI contract generation
+└── .github/workflows/              # ci.yml · pre-release.yml (dev) · release-please.yml · release.yml
 ```
 
 ## Documentation

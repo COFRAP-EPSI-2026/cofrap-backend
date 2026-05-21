@@ -4,7 +4,7 @@
     Installe la stack COFRAP (OpenFaaS + chart cofrap) sur un cluster Kubernetes.
 
 .DESCRIPTION
-    Équivalent PowerShell de scripts/install.sh — compatible Windows natif (PowerShell 5.1+ ou PS Core 7+).
+    Équivalent PowerShell de scripts/prod/install.sh — compatible Windows natif (PowerShell 5.1+ ou PS Core 7+).
     Vérifie les prérequis, installe OpenFaaS via Helm, génère les secrets, déploie le chart cofrap.
 
 .PARAMETER Namespace
@@ -23,8 +23,8 @@
     Skip l'install OpenFaaS si le cluster en a déjà un.
 
 .EXAMPLE
-    ./scripts/install.ps1
-    ./scripts/install.ps1 -Namespace demo -SkipOpenFaaS
+    ./scripts/prod/install.ps1
+    ./scripts/prod/install.ps1 -Namespace demo -SkipOpenFaaS
 #>
 [CmdletBinding()]
 param(
@@ -37,7 +37,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$ChartPath = Join-Path $ScriptDir ".." "deploy" "helm" "cofrap"
+$ChartPath = Join-Path $ScriptDir ".." ".." "deploy" "helm" "cofrap"
 
 # ─── helpers ────────────────────────────────────────────────────────────────
 function Write-Step ($msg)  { Write-Host "▸ $msg" -ForegroundColor Cyan }

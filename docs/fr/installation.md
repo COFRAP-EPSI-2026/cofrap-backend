@@ -2,7 +2,7 @@
 
 Guide complet pour déployer la stack COFRAP sur **K3s**, **minikube** ou un **cluster K8s existant**, reproductible sur **Linux** et **Windows**.
 
-L'installation est orchestrée par un chart Helm unique ([`deploy/helm/cofrap`](../../deploy/helm/cofrap)) et deux scripts d'amorçage : [`scripts/install.sh`](../../scripts/install.sh) (bash) et [`scripts/install.ps1`](../../scripts/install.ps1) (PowerShell). Les deux font exactement la même chose.
+L'installation est orchestrée par un chart Helm unique ([`deploy/helm/cofrap`](../../deploy/helm/cofrap)) et deux scripts d'amorçage : [`scripts/prod/install.sh`](../../scripts/prod/install.sh) (bash) et [`scripts/prod/install.ps1`](../../scripts/prod/install.ps1) (PowerShell). Les deux font exactement la même chose.
 
 ---
 
@@ -72,10 +72,10 @@ git clone https://github.com/COFRAP-EPSI-2026/cofrap-backend.git
 cd cofrap-backend
 
 # Linux / macOS / WSL / Git Bash
-./scripts/install.sh
+./scripts/prod/install.sh
 
 # Windows PowerShell
-./scripts/install.ps1
+./scripts/prod/install.ps1
 ```
 
 Le script :
@@ -117,7 +117,7 @@ K3s embarque déjà :
 ```bash
 git clone https://github.com/COFRAP-EPSI-2026/cofrap-backend.git
 cd cofrap-backend
-./scripts/install.sh
+./scripts/prod/install.sh
 ```
 
 ---
@@ -128,18 +128,18 @@ Pour un cluster K8s déjà provisionné (GKE/AKS/EKS/Kapsule, homelab, kubeadm�
 
 ```bash
 # Si OpenFaaS est DÉJÀ installé, skipper son install :
-SKIP_OPENFAAS=1 ./scripts/install.sh
+SKIP_OPENFAAS=1 ./scripts/prod/install.sh
 # ou avec PowerShell
-./scripts/install.ps1 -SkipOpenFaaS
+./scripts/prod/install.ps1 -SkipOpenFaaS
 
 # Sinon, le script s'occupe d'OpenFaaS aussi :
-./scripts/install.sh
+./scripts/prod/install.sh
 ```
 
 Pour personnaliser :
 
 ```bash
-NAMESPACE=cofrap-prod RELEASE_NAME=cofrap-prod ./scripts/install.sh
+NAMESPACE=cofrap-prod RELEASE_NAME=cofrap-prod ./scripts/prod/install.sh
 ```
 
 Ou directement en Helm pour un contrôle total :
@@ -221,12 +221,12 @@ Plus simple : utiliser la [collection Bruno](../../bruno/) en sélectionnant l'e
 
 ```bash
 # Linux / macOS / WSL
-./scripts/uninstall.sh                       # garde OpenFaaS
-PURGE_OPENFAAS=1 ./scripts/uninstall.sh      # supprime tout, OpenFaaS inclus
+./scripts/prod/uninstall.sh                       # garde OpenFaaS
+PURGE_OPENFAAS=1 ./scripts/prod/uninstall.sh      # supprime tout, OpenFaaS inclus
 
 # Windows
-./scripts/uninstall.ps1
-./scripts/uninstall.ps1 -PurgeOpenFaaS
+./scripts/prod/uninstall.ps1
+./scripts/prod/uninstall.ps1 -PurgeOpenFaaS
 ```
 
 Le script :
@@ -306,8 +306,8 @@ Quelques pointeurs rapides :
 | Symptôme                                              | Solution                                                    |
 |-------------------------------------------------------|-------------------------------------------------------------|
 | PVC MariaDB en `Pending`                              | Le cluster n'a pas de storageClass par défaut. Voir [`troubleshooting.md`](troubleshooting.md). |
-| Fonctions en `ErrImagePull` / `ImagePullBackOff`      | Les images n'existent pas sur GHCR (aucun tag git poussé). Builder localement avec [`./scripts/build-images.sh`](../../scripts/build-images.sh) (ou `.ps1` sur Windows), puis `helm upgrade --reuse-values --set functions.pullPolicy=IfNotPresent` + `kubectl -n openfaas-fn rollout restart deployment -l faas_function`. |
-| Gateway répond `error finding function <name>.openfaas-fn` (404) | Les fonctions ne sont pas (encore) déployées comme Deployments+Services labellisés. Réinstaller via `./scripts/install.sh` ou `helm upgrade --install cofrap deploy/helm/cofrap ...`. Vérifier : `kubectl -n openfaas-fn get deploy -l faas_function`. |
+| Fonctions en `ErrImagePull` / `ImagePullBackOff`      | Les images n'existent pas sur GHCR (aucun tag git poussé). Builder localement avec [`./scripts/prod/build-images.sh`](../../scripts/prod/build-images.sh) (ou `.ps1` sur Windows), puis `helm upgrade --reuse-values --set functions.pullPolicy=IfNotPresent` + `kubectl -n openfaas-fn rollout restart deployment -l faas_function`. |
+| Gateway répond `error finding function <name>.openfaas-fn` (404) | Les fonctions ne sont pas (encore) déployées comme Deployments+Services labellisés. Réinstaller via `./scripts/prod/install.sh` ou `helm upgrade --install cofrap deploy/helm/cofrap ...`. Vérifier : `kubectl -n openfaas-fn get deploy -l faas_function`. |
 | Erreur Helm `enabling 'operator.create' is only supported for OpenFaaS Pro` | C'est attendu — `operator.create` exige OpenFaaS Pro. Le chart `cofrap` utilise des Deployments classiques et ne nécessite PAS l'operator. Ne pas passer ce flag à `openfaas/openfaas`. |
 | `secrets.encryptionKey est obligatoire`               | Lancer via le script ou passer les 3 `--set secrets.*` à la main. |
 | Gateway OpenFaaS inaccessible en port-forward         | Vérifier que le pod `gateway` est `Running` dans `openfaas`. |

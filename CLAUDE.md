@@ -33,8 +33,11 @@ bruno/                 # collection Bruno prête à l'emploi (envs + flux nomina
 docs/
   fr/ , en/            # doc bilingue EN MIROIR (installation, architecture, api, deployment, security, dev, testing, troubleshooting, adr/)
   openapi.yaml         # contrat OpenAPI 3.1 (neutre, à la racine de docs/)
-scripts/               # install / uninstall / build-images (.sh + .ps1) + generate-openapi.py
-.github/workflows/     # ci.yml (PR + push main) + release.yml (sur tag v*)
+scripts/
+  prod/                # déploiement cluster : install / uninstall / build-images (.sh + .ps1)
+  dev/                 # dev local : pilotage de la stack docker-compose (.sh + .ps1)
+  generate-openapi.py  # génération du contrat OpenAPI
+.github/workflows/     # ci.yml (validation PR) + pre-release.yml (push dev) + release-please.yml + release.yml
 stack.yml              # manifeste OpenFaaS (alternative au chart, pour `faas-cli up`)
 docker-compose.yml     # stack dev local : MariaDB + 3 fonctions + Traefik (gateway :8080)
 pyproject.toml         # ruff + pytest config (line-length 100, target py312)
@@ -89,9 +92,9 @@ faas-cli secret list
 ### Déploiement complet (chart Helm)
 
 ```bash
-./scripts/install.sh             # Linux / WSL / Git Bash
-./scripts/install.ps1            # Windows PowerShell
-./scripts/uninstall.sh           # nettoyage
+./scripts/prod/install.sh             # Linux / WSL / Git Bash
+./scripts/prod/install.ps1            # Windows PowerShell
+./scripts/prod/uninstall.sh           # nettoyage
 ```
 
 Voir [`docs/fr/installation.md`](docs/fr/installation.md) pour les variantes K3s / minikube / cluster existant. Le chart vit dans [`deploy/helm/cofrap/`](deploy/helm/cofrap/). Pour valider sans appliquer : `helm lint deploy/helm/cofrap && helm template cofrap deploy/helm/cofrap --set secrets.encryptionKey=x --set secrets.mariadbPassword=x --set secrets.mariadbRootPassword=x`.
@@ -147,7 +150,7 @@ Fonctionnement :
 - Le bump des fichiers est piloté par l'annotation `x-release-please-version` posée sur la ligne de version de chaque fichier, et par la liste `extra-files` de [`release-please-config.json`](release-please-config.json).
 
 Fichiers porteurs de version (annotés `x-release-please-version`, bumpés automatiquement) :
-`pyproject.toml`, `deploy/helm/cofrap/Chart.yaml` (×2 : `version` + `appVersion`), `deploy/helm/cofrap/values.yaml`, `stack.yml` (×3 `image:`), `functions/*/main.py` (×3), `scripts/generate-openapi.py`, `scripts/build-images.sh` + `.ps1`, `README.md` + `README.en.md` (ligne « version courante »).
+`pyproject.toml`, `deploy/helm/cofrap/Chart.yaml` (×2 : `version` + `appVersion`), `deploy/helm/cofrap/values.yaml`, `stack.yml` (×3 `image:`), `functions/*/main.py` (×3), `scripts/generate-openapi.py`, `scripts/prod/build-images.sh` + `.ps1`, `README.md` + `README.en.md` (ligne « version courante »).
 
 **Si tu ajoutes un nouveau fichier portant la version** : pose l'annotation `# x-release-please-version` (ou `<!-- x-release-please-version -->` en markdown) sur la ligne, et ajoute le chemin dans `extra-files` de `release-please-config.json`.
 

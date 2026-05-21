@@ -17,8 +17,8 @@
         "functions/generate-2fa/main.py",
         "functions/authenticate-user/main.py",
         "scripts/generate-openapi.py",
-        "scripts/build-images.sh",
-        "scripts/build-images.ps1"
+        "scripts/prod/build-images.sh",
+        "scripts/prod/build-images.ps1"
       ]
     }
   }

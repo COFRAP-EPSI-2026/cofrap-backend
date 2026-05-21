@@ -2,8 +2,8 @@
 # Désinstalle la stack COFRAP. Garde OpenFaaS en place par défaut.
 #
 # Usage :
-#   ./scripts/uninstall.sh                     # supprime cofrap + secrets + PVC
-#   PURGE_OPENFAAS=1 ./scripts/uninstall.sh    # supprime AUSSI OpenFaaS
+#   ./scripts/prod/uninstall.sh                     # supprime cofrap + secrets + PVC
+#   PURGE_OPENFAAS=1 ./scripts/prod/uninstall.sh    # supprime AUSSI OpenFaaS
 
 set -euo pipefail
 

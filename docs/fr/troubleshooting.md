@@ -53,10 +53,10 @@ Builder localement et charger dans le cluster :
 
 ```bash
 # Linux / WSL / Git Bash
-./scripts/build-images.sh
+./scripts/prod/build-images.sh
 
 # Windows PowerShell
-./scripts/build-images.ps1
+./scripts/prod/build-images.ps1
 ```
 
 Le script auto-détecte minikube / K3s / K3d / KinD et utilise le bon mécanisme (`docker-env` pour minikube, `k3s ctr images import` pour K3s, `kind load`, etc.).
@@ -72,7 +72,7 @@ kubectl -n openfaas-fn rollout restart deployment -l 'faas_function'
 Pour un cluster distant, push sur ton propre registry :
 
 ```bash
-REGISTRY=ghcr.io/mon-org PUSH=1 ./scripts/build-images.sh
+REGISTRY=ghcr.io/mon-org PUSH=1 ./scripts/prod/build-images.sh
 # puis
 helm upgrade cofrap ./deploy/helm/cofrap -n cofrap --reuse-values \
   --set functions.registry=ghcr.io/mon-org
@@ -116,8 +116,8 @@ kubectl -n openfaas-fn get deploy,svc,pods -l 'faas_function'
 Re-déployer le chart :
 
 ```bash
-./scripts/install.sh                     # Linux / WSL / Git Bash
-./scripts/install.ps1                    # Windows PowerShell
+./scripts/prod/install.sh                     # Linux / WSL / Git Bash
+./scripts/prod/install.ps1                    # Windows PowerShell
 
 # ou directement :
 helm upgrade --install cofrap deploy/helm/cofrap \
@@ -150,7 +150,7 @@ Le chart `cofrap` ne dépend pas de l'operator — il déploie les fonctions com
 Si un précédent `helm upgrade ... --set operator.create=true` a échoué, l'install OpenFaaS précédente est intacte. Pour réinstaller proprement les fonctions, il suffit de relancer le script :
 
 ```bash
-./scripts/install.sh -SkipOpenFaaS    # Windows: ./scripts/install.ps1 -SkipOpenFaaS
+./scripts/prod/install.sh -SkipOpenFaaS    # Windows: ./scripts/prod/install.ps1 -SkipOpenFaaS
 ```
 
 ### `pymysql.err.OperationalError: (2003, "Can't connect to MySQL server")`

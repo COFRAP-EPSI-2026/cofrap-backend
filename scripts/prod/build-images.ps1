@@ -1,21 +1,25 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    Build les 3 images des fonctions et les rend disponibles dans le cluster local.
+    Build les 3 images des fonctions COFRAP.
 
 .DESCRIPTION
-    Auto-détecte minikube / K3s / kind / Docker Desktop. Pour les clusters distants,
-    push sur le registry de ton choix avec -Push.
+    Deux modes :
+      - LOCAL : build mono-architecture + import dans le cluster local
+                (auto-détecte minikube / K3s / k3d / kind).
+      - PUSH  : build MULTI-architecture (buildx) + push sur un registry (-Push).
 
 .EXAMPLE
-    ./scripts/build-images.ps1
-    ./scripts/build-images.ps1 -Registry "ghcr.io/mon-org" -Push
-    ./scripts/build-images.ps1 -Tag dev
+    ./scripts/prod/build-images.ps1
+    ./scripts/prod/build-images.ps1 -Registry "ghcr.io/mon-org" -Push
+    ./scripts/prod/build-images.ps1 -Tag dev -Push
+    ./scripts/prod/build-images.ps1 -Platforms "linux/amd64,linux/arm64,linux/arm/v7" -Push
 #>
 [CmdletBinding()]
 param(
     [string]$Registry = "ghcr.io/cofrap-epsi-2026",
     [string]$Tag = "2026.2.0",  # x-release-please-version
+    [string]$Platforms = "linux/amd64,linux/arm64",
     [ValidateSet("auto", "minikube", "kind", "k3d", "k3s", "generic")]
     [string]$ClusterType = "auto",
     [switch]$Push
@@ -23,7 +27,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$Root = Join-Path $ScriptDir ".."
+$Root = Join-Path $ScriptDir ".." ".."
 
 $Functions = @("generate-password", "generate-2fa", "authenticate-user")
 
@@ -32,7 +36,33 @@ function Write-Ok ($msg)   { Write-Host $msg     -ForegroundColor Green }
 function Write-Warn2 ($msg){ Write-Host $msg     -ForegroundColor Yellow }
 function Write-Err ($msg)  { Write-Host $msg     -ForegroundColor Red }
 
-# ─── Détection du cluster ───────────────────────────────────────────────────
+# ─── Mode PUSH : build multi-architecture + push (buildx) ────────────────────
+if ($Push) {
+    Write-Step "Build multi-architecture [$Platforms] + push vers $Registry"
+    # Le multi-plateforme exige un builder buildx « docker-container ».
+    docker buildx inspect cofrap-builder *> $null
+    if ($LASTEXITCODE -ne 0) {
+        docker buildx create --name cofrap-builder --driver docker-container | Out-Null
+    }
+    foreach ($fn in $Functions) {
+        $image = "${Registry}/${fn}:${Tag}"
+        Write-Step "  $image"
+        docker buildx build --builder cofrap-builder `
+            --platform $Platforms `
+            --provenance=false `
+            --push `
+            -t $image (Join-Path $Root "functions" $fn)
+        if ($LASTEXITCODE -ne 0) { Write-Err "Build $fn échoué"; exit 1 }
+    }
+    Write-Ok "3 images multi-arch poussées [$Platforms]."
+    Write-Host ""
+    Write-Host "(Re)déployer les fonctions :"
+    Write-Host "  helm upgrade cofrap ./deploy/helm/cofrap -n cofrap --reuse-values ``"
+    Write-Host "    --set functions.registry=$Registry --set functions.version=$Tag"
+    exit 0
+}
+
+# ─── Mode LOCAL : build mono-arch + import dans le cluster ───────────────────
 function Detect-Cluster {
     if ($ClusterType -ne "auto") { return $ClusterType }
     if (Get-Command minikube -ErrorAction SilentlyContinue) {
@@ -49,22 +79,18 @@ function Detect-Cluster {
 $Cluster = Detect-Cluster
 Write-Step "Cluster détecté : $Cluster"
 
-# ─── Configuration du daemon Docker ─────────────────────────────────────────
 switch ($Cluster) {
     "minikube" {
         Write-Warn2 "Pointage du Docker CLI vers le daemon minikube"
         & minikube -p minikube docker-env --shell powershell | Invoke-Expression
     }
     "generic" {
-        if (-not $Push) {
-            Write-Err "Cluster non local détecté. Pour pousser sur un registry :"
-            Write-Err "  ./scripts/build-images.ps1 -Registry ghcr.io/mon-org -Push"
-            exit 1
-        }
+        Write-Err "Cluster non local. Pour publier les images, utilise -Push :"
+        Write-Err "  ./scripts/prod/build-images.ps1 -Push"
+        exit 1
     }
 }
 
-# ─── Build ──────────────────────────────────────────────────────────────────
 foreach ($fn in $Functions) {
     $image = "${Registry}/${fn}:${Tag}"
     Write-Step "Build $image"
@@ -72,7 +98,6 @@ foreach ($fn in $Functions) {
     if ($LASTEXITCODE -ne 0) { Write-Err "Build $fn échoué"; exit 1 }
 }
 
-# ─── Distribution ───────────────────────────────────────────────────────────
 switch ($Cluster) {
     "minikube" {
         Write-Ok "Images disponibles dans le daemon minikube (pas de push nécessaire)."
@@ -80,8 +105,7 @@ switch ($Cluster) {
     "k3s" {
         Write-Step "Import des images dans containerd (K3s)"
         foreach ($fn in $Functions) {
-            $image = "${Registry}/${fn}:${Tag}"
-            docker save $image | sudo k3s ctr images import -
+            docker save "${Registry}/${fn}:${Tag}" | sudo k3s ctr images import -
         }
         Write-Ok "Images importées dans K3s."
     }
@@ -89,37 +113,21 @@ switch ($Cluster) {
         Write-Step "Import des images dans K3d"
         $clusterName = (kubectl config current-context) -replace "^k3d-", ""
         foreach ($fn in $Functions) {
-            $image = "${Registry}/${fn}:${Tag}"
-            & k3d image import $image -c $clusterName
+            & k3d image import "${Registry}/${fn}:${Tag}" -c $clusterName
         }
         Write-Ok "Images importées dans K3d."
     }
     "kind" {
         Write-Step "Import des images dans KinD"
         foreach ($fn in $Functions) {
-            $image = "${Registry}/${fn}:${Tag}"
-            & kind load docker-image $image
+            & kind load docker-image "${Registry}/${fn}:${Tag}"
         }
         Write-Ok "Images importées dans KinD."
-    }
-    "generic" {
-        if ($Push) {
-            Write-Step "Push vers $Registry"
-            foreach ($fn in $Functions) {
-                $image = "${Registry}/${fn}:${Tag}"
-                docker push $image
-            }
-            Write-Ok "Images poussées."
-        }
     }
 }
 
 Write-Host ""
-Write-Host "Pour redéployer les fonctions avec ces images :"
+Write-Host "(Re)déployer les fonctions :"
 Write-Host "  helm upgrade cofrap ./deploy/helm/cofrap -n cofrap --reuse-values ``"
-Write-Host "    --set functions.registry=$Registry ``"
-Write-Host "    --set functions.version=$Tag ``"
-Write-Host "    --set functions.pullPolicy=IfNotPresent"
-Write-Host ""
-Write-Host "Puis forcer le redéploiement (sinon K8s garde les anciens pods sans pull) :"
+Write-Host "    --set functions.registry=$Registry --set functions.version=$Tag --set functions.pullPolicy=IfNotPresent"
 Write-Host "  kubectl -n openfaas-fn rollout restart deployment -l 'faas_function'"

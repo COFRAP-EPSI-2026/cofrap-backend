@@ -130,7 +130,7 @@ kubectl delete namespace cofrap --ignore-not-found
 
 ## Images des fonctions
 
-Le chart pointe sur `ghcr.io/cofrap-epsi-2026/<function>:<version>`, où `<version>` est la valeur `functions.version` de [`values.yaml`](values.yaml). Ces images n'existent qu'après un tag git `vX.Y.Z` (workflow `release.yml`). Sur un fork ou sans release publiée, builder localement avec [`scripts/build-images.sh`](../../../scripts/build-images.sh) / `.ps1`, puis :
+Le chart pointe sur `ghcr.io/cofrap-epsi-2026/<function>:<version>`, où `<version>` est la valeur `functions.version` de [`values.yaml`](values.yaml). Ces images n'existent qu'après un tag git `vX.Y.Z` (workflow `release.yml`). Sur un fork ou sans release publiée, builder localement avec [`scripts/prod/build-images.sh`](../../../scripts/prod/build-images.sh) / `.ps1`, puis :
 
 ```bash
 helm upgrade cofrap deploy/helm/cofrap -n cofrap --reuse-values \

@@ -7,7 +7,8 @@ RUN chmod +x /usr/bin/fwatchdog
 # Lie l'image GHCR au dépôt GitHub (section "Packages" du repo) + licence.
 LABEL org.opencontainers.image.source="https://github.com/COFRAP-EPSI-2026/cofrap-backend" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.title="cofrap-generate-password"
+      org.opencontainers.image.title="cofrap-generate-password" \
+      org.opencontainers.image.description="Fonction serverless COFRAP — génère un mot de passe de 24 caractères et le transmet par QR code (PoC MSPR TPRE912)."
 
 RUN addgroup --system --gid 10001 app && adduser --system --ingroup app --uid 10001 app
 
