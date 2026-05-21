@@ -18,6 +18,14 @@ La même version est portée par : `pyproject.toml`, `deploy/helm/cofrap/Chart.y
 
 ---
 
+## [2026.3.0](https://github.com/COFRAP-EPSI-2026/cofrap-backend/compare/v2026.2.0...v2026.3.0) (2026-05-21)
+
+
+### Features
+
+* ajouter la configuration Nginx et les services de génération de mots de passe et d'authentification ([a058ae3](https://github.com/COFRAP-EPSI-2026/cofrap-backend/commit/a058ae3ff078e6b669886e7f48ed080b7b38b7c7))
+* refactor la stack de développement avec Traefik et mise à jour des configurations ([50d4dcd](https://github.com/COFRAP-EPSI-2026/cofrap-backend/commit/50d4dcdeb6ae27541e4217fd79b363ef1ea51a47))
+
 ## [2026.2.0](https://github.com/COFRAP-EPSI-2026/cofrap-backend/compare/v2026.1.2...v2026.2.0) (2026-05-20)
 
 
