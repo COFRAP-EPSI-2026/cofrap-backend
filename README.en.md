@@ -144,7 +144,7 @@ Deployment stays manual (`faas-cli up` / `helm`) — a deliberate choice for the
 
 ## Versioning
 
-**Calendar** versioning `YEAR.MINOR.PATCH` — current version: **2026.3.0**. <!-- x-release-please-version -->
+**Calendar** versioning `YEAR.MINOR.PATCH` — current version: **2026.3.1**. <!-- x-release-please-version -->
 
 Releases are **automated by [Release Please](https://github.com/googleapis/release-please)** (Google's tool), driven by [Conventional Commits](https://www.conventionalcommits.org/):
 
