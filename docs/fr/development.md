@@ -24,8 +24,8 @@ pip install -r requirements-dev.txt
 cp .env.example .env
 python -c "from cryptography.fernet import Fernet; print('ENCRYPTION_KEY=' + Fernet.generate_key().decode())" >> .env
 
-# Démarrer MariaDB locale
-docker compose up -d
+# Démarrer MariaDB (suffisant pour lancer pytest)
+docker compose up -d mariadb
 ```
 
 À ce stade, `pytest` doit passer en vert (36 tests).
@@ -55,6 +55,39 @@ curl -s -X POST http://127.0.0.1:5001/ \
      -d '{"username":"alice"}' | jq
 ```
 
+## Stack complète avec docker-compose (Traefik)
+
+`docker compose up -d --build` démarre la **stack complète** de dev : MariaDB, les
+3 fonctions buildées et un reverse-proxy **Traefik** qui imite le gateway OpenFaaS.
+
+```bash
+docker compose up -d --build
+```
+
+| Service             | Port hôte | Rôle                                                    |
+|---------------------|-----------|---------------------------------------------------------|
+| Traefik             | `8080`    | Gateway — route `/function/<name>` vers chaque fonction |
+| Traefik (dashboard) | `8090`    | <http://localhost:8090/dashboard/> — routes découvertes |
+| phpMyAdmin          | `8082`    | Inspection de la BDD                                    |
+| MariaDB             | `3306`    | Base de données                                         |
+
+Les fonctions répondent alors exactement comme derrière le gateway OpenFaaS :
+
+```bash
+curl -s -X POST http://localhost:8080/function/generate-password \
+     -H 'Content-Type: application/json' \
+     -d '{"username":"alice"}' | jq
+```
+
+C'est le format d'URL attendu par le **frontend** (proxy `/api` de Vite) et par
+l'environnement Bruno « Local OpenFaaS Gateway » — pratique pour tester
+l'ensemble frontend + backend sans cluster Kubernetes.
+
+Prérequis : `.env` doit contenir une `ENCRYPTION_KEY` valide (générée au setup
+ci-dessus) ; sinon `docker compose up` s'arrête avec un message explicite.
+
+Arrêt : `docker compose down` (`-v` pour aussi supprimer le volume MariaDB).
+
 ## Convention de code
 
 - **Lint** : `ruff check .`
@@ -75,7 +108,7 @@ pytest
 # Unitaires seulement
 pytest -m unit
 
-# Intégration seulement (nécessite docker compose up -d)
+# Intégration seulement (nécessite MariaDB : docker compose up -d mariadb)
 pytest -m integration
 
 # Un seul test

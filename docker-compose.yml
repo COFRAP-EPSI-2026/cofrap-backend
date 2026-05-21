@@ -1,3 +1,24 @@
+# docker-compose.yml — stack de DEV LOCAL du backend COFRAP.
+#
+# Démarre MariaDB + les 3 fonctions OpenFaaS derrière un reverse-proxy Traefik
+# qui imite le gateway OpenFaaS : les fonctions sont joignables sur
+#   http://localhost:8080/function/<name>
+# soit exactement le format d'URL attendu par le frontend (proxy /api de Vite)
+# et par l'environnement Bruno « Local OpenFaaS Gateway ».
+#
+# Le routage Traefik est défini dans deploy/traefik/dynamic.yml (file provider) —
+# aucune dépendance au socket Docker.
+#
+# Prérequis : un fichier .env (cf. .env.example) contenant au moins ENCRYPTION_KEY.
+#
+#   docker compose up -d --build
+#
+# Ports exposés sur l'hôte :
+#   8080 → Traefik (gateway des fonctions — cible du frontend)
+#   8090 → tableau de bord Traefik (http://localhost:8090/dashboard/)
+#   8082 → phpMyAdmin
+#   3306 → MariaDB
+
 services:
   mariadb:
     image: mariadb:11
@@ -20,6 +41,99 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+    networks:
+      - web
+
+  # --- Reverse-proxy : imite le gateway OpenFaaS (routes /function/<name>) -----
+  traefik:
+    image: traefik:v3.3
+    container_name: cofrap-traefik
+    restart: unless-stopped
+    command:
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
+      - "--entrypoints.web.address=:80"
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+      - "--log.level=WARN"
+    ports:
+      - "8080:80"     # gateway des fonctions
+      - "8090:8080"   # tableau de bord Traefik
+    volumes:
+      - ./deploy/traefik:/etc/traefik/dynamic:ro
+    depends_on:
+      - generate-password
+      - generate-2fa
+      - authenticate-user
+    networks:
+      - web
+
+  # --- Fonctions OpenFaaS (of-watchdog + FastAPI, port conteneur 8080) ---------
+  generate-password:
+    build:
+      context: ./functions/generate-password
+    image: cofrap/generate-password:dev
+    container_name: cofrap-generate-password
+    restart: unless-stopped
+    environment:
+      DB_HOST: mariadb
+      DB_PORT: "3306"
+      DB_NAME: ${DB_NAME:-cofrap}
+      DB_USER: ${DB_USER:-cofrap}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-cofrap_dev}
+      ENCRYPTION_KEY: "${ENCRYPTION_KEY:?ENCRYPTION_KEY manquant - generer une cle Fernet et la placer dans .env (voir .env.example)}"
+      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-*}
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - web
+
+  generate-2fa:
+    build:
+      context: ./functions/generate-2fa
+    image: cofrap/generate-2fa:dev
+    container_name: cofrap-generate-2fa
+    restart: unless-stopped
+    environment:
+      DB_HOST: mariadb
+      DB_PORT: "3306"
+      DB_NAME: ${DB_NAME:-cofrap}
+      DB_USER: ${DB_USER:-cofrap}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-cofrap_dev}
+      ENCRYPTION_KEY: "${ENCRYPTION_KEY:?ENCRYPTION_KEY manquant - generer une cle Fernet et la placer dans .env (voir .env.example)}"
+      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-*}
+      TOTP_ISSUER: ${TOTP_ISSUER:-COFRAP}
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - web
+
+  authenticate-user:
+    build:
+      context: ./functions/authenticate-user
+    image: cofrap/authenticate-user:dev
+    container_name: cofrap-authenticate-user
+    restart: unless-stopped
+    environment:
+      DB_HOST: mariadb
+      DB_PORT: "3306"
+      DB_NAME: ${DB_NAME:-cofrap}
+      DB_USER: ${DB_USER:-cofrap}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-cofrap_dev}
+      ENCRYPTION_KEY: "${ENCRYPTION_KEY:?ENCRYPTION_KEY manquant - generer une cle Fernet et la placer dans .env (voir .env.example)}"
+      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-*}
+      # Fenêtre d'expiration des identifiants (défaut 6 mois). Mettre une petite
+      # valeur (ex. 10) dans .env pour tester le scénario « compte expiré ».
+      EXPIRY_SECONDS: ${EXPIRY_SECONDS:-15552000}
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - web
+
+  # --- Inspection de la BDD (optionnel) ---------------------------------------
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: cofrap-phpmyadmin
@@ -27,12 +141,18 @@ services:
     environment:
       PMA_HOST: mariadb
       PMA_USER: ${DB_USER:-cofrap}
-      PMA_PASSWORD: ${DB_PASSWORD:-cofrap_dev}
+      PMA_PASSWORD: ${MARIADB_PASSWORD:-cofrap_dev}
     ports:
-      - "8080:80"
+      - "8082:80"
     depends_on:
       mariadb:
         condition: service_healthy
+    networks:
+      - web
 
 volumes:
   mariadb_data:
+
+networks:
+  web:
+    driver: bridge

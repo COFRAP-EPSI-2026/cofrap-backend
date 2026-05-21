@@ -13,7 +13,7 @@ Sélectionner via le sélecteur d'environnement (haut-droite de Bruno) avant de 
 | Env                          | Quand l'utiliser                                                                                   |
 |-------------------------------|----------------------------------------------------------------------------------------------------|
 | **Local Direct**              | Dev rapide d'une fonction isolée — `uvicorn main:app --port <N>` sur 5001/5002/5003                |
-| **Local OpenFaaS Gateway**    | Cluster local (K3S/minikube) avec OpenFaaS installé, gateway port-forwardé sur 127.0.0.1:8080      |
+| **Local OpenFaaS Gateway**    | Stack `docker compose` (Traefik sur `:8080`) **ou** cluster OpenFaaS avec gateway port-forwardé sur 127.0.0.1:8080 |
 | **Cluster**                   | Cluster déployé (cloud, homelab) — éditer l'URL                                                    |
 
 Le pattern d'URL est encapsulé dans 3 variables d'env par fonction :
@@ -26,12 +26,30 @@ Le pattern d'URL est encapsulé dans 3 variables d'env par fonction :
 
 → Toutes les requêtes utilisent `{{<fn>_url}}`. Pas besoin de toucher aux .bru pour switcher de mode, juste changer d'environnement.
 
-## Lancer les fonctions en local (env "Local Direct")
+## Lancer les fonctions en local
+
+Deux modes, selon l'environnement Bruno sélectionné.
+
+### Option A — `docker compose` (env « Local OpenFaaS Gateway »)
+
+La stack `docker compose` build les 3 fonctions et les place derrière un Traefik qui
+imite le gateway OpenFaaS (routes `/function/<name>` sur le port 8080) :
 
 ```bash
-docker compose up -d
+docker compose up -d --build
+```
 
-# 3 terminaux séparés (avec PowerShell/bash, mêmes vars d'env exportées depuis .env)
+Sélectionner l'environnement **Local OpenFaaS Gateway** : les URLs
+`http://127.0.0.1:8080/function/<name>` ciblent directement la stack.
+
+### Option B — uvicorn direct (env « Local Direct »)
+
+Pour itérer sur une fonction isolée, la lancer à la main (MariaDB seule via compose) :
+
+```bash
+docker compose up -d mariadb
+
+# 3 terminaux séparés (mêmes vars d'env exportées depuis .env)
 cd functions/generate-password    && uvicorn main:app --port 5001
 cd functions/generate-2fa         && uvicorn main:app --port 5002
 cd functions/authenticate-user    && uvicorn main:app --port 5003

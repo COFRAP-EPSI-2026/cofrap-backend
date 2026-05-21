@@ -36,7 +36,7 @@ docs/
 scripts/               # install / uninstall / build-images (.sh + .ps1) + generate-openapi.py
 .github/workflows/     # ci.yml (PR + push main) + release.yml (sur tag v*)
 stack.yml              # manifeste OpenFaaS (alternative au chart, pour `faas-cli up`)
-docker-compose.yml     # MariaDB pour dev local
+docker-compose.yml     # stack dev local : MariaDB + 3 fonctions + Traefik (gateway :8080)
 pyproject.toml         # ruff + pytest config (line-length 100, target py312)
 requirements-dev.txt   # pytest, ruff, pyyaml, deps applicatives pour pouvoir lancer les tests
 ```
