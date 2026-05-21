@@ -16,7 +16,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="${SCRIPT_DIR}/.."
 
 REGISTRY="${REGISTRY:-ghcr.io/cofrap-epsi-2026}"
-TAG="${TAG:-2026.3.1}"  # x-release-please-version
+TAG="${TAG:-2026.3.2}"  # x-release-please-version
 PUSH="${PUSH:-0}"
 CLUSTER_TYPE="${CLUSTER_TYPE:-auto}"
 

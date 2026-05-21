@@ -18,6 +18,13 @@ La même version est portée par : `pyproject.toml`, `deploy/helm/cofrap/Chart.y
 
 ---
 
+## [2026.3.2](https://github.com/COFRAP-EPSI-2026/cofrap-backend/compare/v2026.3.1...v2026.3.2) (2026-05-21)
+
+
+### Bug Fixes
+
+* corriger le secret utilisé pour l'authentification au registre GHCR ([25e6952](https://github.com/COFRAP-EPSI-2026/cofrap-backend/commit/25e6952da1b590390980020fe50504155077b2ef))
+
 ## [2026.3.1](https://github.com/COFRAP-EPSI-2026/cofrap-backend/compare/v2026.3.0...v2026.3.1) (2026-05-21)
 
 
