@@ -13,6 +13,7 @@
 [![MariaDB](https://img.shields.io/badge/MariaDB-11-003545?logo=mariadb&logoColor=white)](https://mariadb.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=COFRAP-EPSI-2026_cofrap-backend&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=COFRAP-EPSI-2026_cofrap-backend)
 
 </div>
 

@@ -72,6 +72,7 @@ services:
   generate-password:
     build:
       context: ./functions/generate-password
+      dockerfile: Dockerfile
     image: cofrap/generate-password:dev
     container_name: cofrap-generate-password
     restart: unless-stopped
@@ -92,6 +93,7 @@ services:
   generate-2fa:
     build:
       context: ./functions/generate-2fa
+      dockerfile: Dockerfile
     image: cofrap/generate-2fa:dev
     container_name: cofrap-generate-2fa
     restart: unless-stopped
@@ -113,6 +115,7 @@ services:
   authenticate-user:
     build:
       context: ./functions/authenticate-user
+      dockerfile: Dockerfile
     image: cofrap/authenticate-user:dev
     container_name: cofrap-authenticate-user
     restart: unless-stopped
