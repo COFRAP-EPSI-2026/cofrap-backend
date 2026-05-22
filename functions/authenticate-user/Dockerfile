@@ -29,6 +29,9 @@ ENV cgi_headers="true"
 ENV exec_timeout="30s"
 ENV write_timeout="30s"
 ENV read_timeout="30s"
+# of-watchdog : limite les requêtes concurrentes par instance (HTTP 429 au-delà).
+# Borne le nombre de connexions MariaDB ouvertes simultanément.
+ENV max_inflight="10"
 
 EXPOSE 8080
 # Sonde de santé en Python : l'image python:3.12-slim n'embarque ni wget ni curl.
