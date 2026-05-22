@@ -141,6 +141,15 @@ services:
     image: dbeaver/cloudbeaver:latest
     container_name: cofrap-cloudbeaver
     restart: unless-stopped
+    environment:
+      # Skip initial setup wizard
+      - CB_SERVER_NAME=COFRAP-DB
+      - CB_SERVER_URL=http://localhost:8082
+      - CB_ADMIN_NAME=cofrap_admin
+      - CB_ADMIN_PASSWORD=${CB_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ./deploy/cloudbeaver/initial-data-sources.conf:/opt/cloudbeaver/conf/initial-data-sources.conf:ro
+      - cloudbeaver_data:/opt/cloudbeaver/workspace
     ports:
       - "8082:8978"
     depends_on:
@@ -151,6 +160,7 @@ services:
 
 volumes:
   mariadb_data:
+  cloudbeaver_data:
 
 networks:
   web:
