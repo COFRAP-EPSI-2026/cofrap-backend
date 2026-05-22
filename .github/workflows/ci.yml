@@ -184,7 +184,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test, lint]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 0
       - name: Download coverage and ruff reports
@@ -192,8 +192,8 @@ jobs:
         with:
           pattern: '*-report*' # Récupère ruff-report et coverage-...
           merge-multiple: true
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-scan-action@v3
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@7006c4492b2e0ee0f816d36501671557c97f5995 # v8.1.0
         env:
           GITHUB_TOKEN: ${{ secrets.GHCR_PAT_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
