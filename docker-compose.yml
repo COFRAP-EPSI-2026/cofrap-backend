@@ -21,7 +21,7 @@
 
 services:
   mariadb:
-    image: mariadb:11
+    image: mariadb:12
     container_name: cofrap-mariadb
     restart: unless-stopped
     environment:
@@ -46,7 +46,7 @@ services:
 
   # --- Reverse-proxy : imite le gateway OpenFaaS (routes /function/<name>) -----
   traefik:
-    image: traefik:v3.3
+    image: traefik:v3.7.1
     container_name: cofrap-traefik
     restart: unless-stopped
     command:
@@ -72,7 +72,8 @@ services:
   generate-password:
     build:
       context: ./functions/generate-password
-    image: cofrap/generate-password:dev
+      dockerfile: Dockerfile
+    #image: cofrap/generate-password:dev
     container_name: cofrap-generate-password
     restart: unless-stopped
     environment:
@@ -92,7 +93,8 @@ services:
   generate-2fa:
     build:
       context: ./functions/generate-2fa
-    image: cofrap/generate-2fa:dev
+      dockerfile: Dockerfile
+    #image: cofrap/generate-2fa:dev
     container_name: cofrap-generate-2fa
     restart: unless-stopped
     environment:
@@ -113,7 +115,8 @@ services:
   authenticate-user:
     build:
       context: ./functions/authenticate-user
-    image: cofrap/authenticate-user:dev
+      dockerfile: Dockerfile
+    #image: cofrap/authenticate-user:dev
     container_name: cofrap-authenticate-user
     restart: unless-stopped
     environment:

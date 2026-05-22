@@ -24,13 +24,16 @@ _DEFAULT_ENV = {
     "DB_PORT": "3306",
     "DB_NAME": "cofrap",
     "DB_USER": "cofrap",
+    "RATE_LIMIT_ENABLED": "0",
 }
 
 
 @pytest.fixture(scope="session")
 def fernet_key() -> str:
-    """Clé Fernet stable pour toute la session — évite de régénérer à chaque test."""
-    return Fernet.generate_key().decode()
+    """Clé Fernet stable pour toute la session — évite de régénérer à chaque test.
+    Si ENCRYPTION_KEY est déjà dans l'env, on l'utilise pour rester cohérent.
+    """
+    return os.getenv("ENCRYPTION_KEY") or Fernet.generate_key().decode()
 
 
 @pytest.fixture(autouse=True)
