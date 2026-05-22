@@ -27,6 +27,44 @@ jobs:
       - run: ruff check .
       - run: ruff format --check .
 
+  security-sast:
+    name: Security Scan (Bandit + Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Nécessaire pour Gitleaks pour scanner l'historique
+      - name: Gitleaks (Secrets)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Bandit (SAST)
+        run: |
+          pip install bandit
+          bandit -c .bandit -r functions/ -ll
+
+  security-sca:
+    name: Dependency Scan (pip-audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: pip-audit
+        run: |
+          pip install pip-audit
+          # On scanne toutes les fonctions et les deps de dev
+          pip-audit -r requirements-dev.txt
+          pip-audit -r functions/authenticate-user/requirements.txt
+          pip-audit -r functions/generate-2fa/requirements.txt
+          pip-audit -r functions/generate-password/requirements.txt
+
   test:
     name: Tests (pytest)
     runs-on: ubuntu-latest
@@ -106,7 +144,7 @@ jobs:
   docker-build:
     name: Build images (no push)
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: [lint, test, security-sast, security-sca]
     strategy:
       matrix:
         function: [generate-password, generate-2fa, authenticate-user]
@@ -117,7 +155,17 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./functions/${{ matrix.function }}
+          load: true # Charge l'image localement pour Trivy
           push: false
           tags: cofrap/${{ matrix.function }}:ci-${{ github.run_id }}
           cache-from: type=gha,scope=${{ matrix.function }}
           cache-to: type=gha,mode=max,scope=${{ matrix.function }}
+      - name: Trivy (Container Scan)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: cofrap/${{ matrix.function }}:ci-${{ github.run_id }}
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
