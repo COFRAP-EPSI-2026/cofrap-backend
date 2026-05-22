@@ -55,7 +55,7 @@ jobs:
       - name: Bandit (SAST)
         run: |
           pip install bandit
-          bandit -c .bandit -r functions/ -ll
+          bandit -c .bandit.yml -r functions/ -ll
 
   security-sca:
     name: Dependency Scan (pip-audit)

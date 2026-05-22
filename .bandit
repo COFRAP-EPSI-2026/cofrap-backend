@@ -1,3 +1,0 @@
-[bandit]
-exclude: /tests,/.venv,/.git
-skips: B101 # Optionnel : ignorer l'utilisation de 'assert' (souvent utilisé en dev)
