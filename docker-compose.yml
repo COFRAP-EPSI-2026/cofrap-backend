@@ -21,7 +21,7 @@
 
 services:
   mariadb:
-    image: mariadb:11
+    image: mariadb:12
     container_name: cofrap-mariadb
     restart: unless-stopped
     environment:
@@ -46,7 +46,7 @@ services:
 
   # --- Reverse-proxy : imite le gateway OpenFaaS (routes /function/<name>) -----
   traefik:
-    image: traefik:v3.3
+    image: traefik:3.7.1
     container_name: cofrap-traefik
     restart: unless-stopped
     command:
