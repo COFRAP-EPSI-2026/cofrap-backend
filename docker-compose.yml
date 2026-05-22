@@ -136,17 +136,13 @@ services:
     networks:
       - web
 
-  # --- Inspection de la BDD (optionnel) ---------------------------------------
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    container_name: cofrap-phpmyadmin
+  # --- Inspection de la BDD (Moderne) -----------------------------------------
+  cloudbeaver:
+    image: dbeaver/cloudbeaver:latest
+    container_name: cofrap-cloudbeaver
     restart: unless-stopped
-    environment:
-      PMA_HOST: mariadb
-      PMA_USER: ${DB_USER:-cofrap}
-      PMA_PASSWORD: ${MARIADB_PASSWORD:-cofrap_dev}
     ports:
-      - "8082:80"
+      - "8082:8978"
     depends_on:
       mariadb:
         condition: service_healthy
