@@ -46,7 +46,7 @@ services:
 
   # --- Reverse-proxy : imite le gateway OpenFaaS (routes /function/<name>) -----
   traefik:
-    image: traefik:3.7.1
+    image: traefik:v3.7.1
     container_name: cofrap-traefik
     restart: unless-stopped
     command:

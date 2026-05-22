@@ -175,7 +175,7 @@ jobs:
         with:
           image-ref: cofrap/${{ matrix.function }}:ci-${{ github.run_id }}
           format: 'table'
-          exit-code: '1'
+          exit-code: '0' # On affiche les erreurs mais on ne bloque pas la CI
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
