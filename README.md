@@ -144,7 +144,7 @@ Le déploiement reste manuel (`faas-cli up` / `helm`) — choix volontaire pour 
 
 ## Versioning
 
-Versioning **calendaire** `ANNÉE.MINEUR.CORRECTIF` — version courante : **2026.3.1**. <!-- x-release-please-version -->
+Versioning **calendaire** `ANNÉE.MINEUR.CORRECTIF` — version courante : **2026.3.2**. <!-- x-release-please-version -->
 
 Les releases sont **automatisées par [Release Please](https://github.com/googleapis/release-please)** (l'outil de Google), à partir des [Conventional Commits](https://www.conventionalcommits.org/) :
 
