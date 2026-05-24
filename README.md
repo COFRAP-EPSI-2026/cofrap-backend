@@ -10,7 +10,7 @@
 [![Python](https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![OpenFaaS](https://img.shields.io/badge/OpenFaaS-Community-3b4cca?logo=openfaas&logoColor=white)](https://www.openfaas.com/)
-[![MariaDB](https://img.shields.io/badge/MariaDB-11-003545?logo=mariadb&logoColor=white)](https://mariadb.org/)
+[![MariaDB](https://img.shields.io/badge/MariaDB-12-003545?logo=mariadb&logoColor=white)](https://mariadb.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=COFRAP-EPSI-2026_cofrap-backend&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=COFRAP-EPSI-2026_cofrap-backend)
@@ -59,7 +59,7 @@ Frontend TypeScript séparé · documentation détaillée dans [`docs/fr/`](docs
                                           │  └─ encryption-key (Fernet)
 ```
 
-**Stack** : Python 3.12 · FastAPI · Uvicorn · of-watchdog (HTTP mode) · PyMySQL · Fernet · pyotp · qrcode · MariaDB 11.
+**Stack** : Python 3.12 · FastAPI · Uvicorn · of-watchdog (HTTP mode) · PyMySQL · Fernet · pyotp · qrcode · slowapi (rate-limit) · MariaDB 12.
 
 → Détails et justifications : [`docs/fr/architecture.md`](docs/fr/architecture.md) et [`docs/fr/adr/`](docs/fr/adr/).
 
@@ -136,12 +136,16 @@ pytest --cov=functions        # avec couverture
 
 ## CI/CD
 
-Deux workflows GitHub Actions :
+Quatre workflows GitHub Actions :
 
-- [`ci.yml`](.github/workflows/ci.yml) — sur PR et push `main` : `ruff` + `pytest` (avec service MariaDB) + build des 3 images Docker.
-- [`release.yml`](.github/workflows/release.yml) — sur tag `v*.*.*` : rejoue le CI puis **build multi-arch (amd64/arm64) + push sur GHCR** des 3 fonctions, avec SBOM et attestation de provenance.
+| Workflow                                                     | Déclencheur                  | Rôle                                                                                                |
+|--------------------------------------------------------------|------------------------------|-----------------------------------------------------------------------------------------------------|
+| [`ci.yml`](.github/workflows/ci.yml)                         | PR vers `dev` ou `main`      | **Validation** : `ruff` + `pytest` (service MariaDB) + build des 3 images (sans push) — réutilisable via `workflow_call` |
+| [`pre-release.yml`](.github/workflows/pre-release.yml)       | push sur `dev` (+ merge-group)| Rejoue `ci.yml`, puis **publie les images `:dev`** (+ `:dev-<sha>`) sur GHCR (multi-arch amd64/arm64) |
+| [`release-please.yml`](.github/workflows/release-please.yml) | push sur `main`              | **Voie principale de release** : maintient la Release PR, au merge → tag `vX.Y.Z` + images `2026.X.Y` + `latest` |
+| [`release.yml`](.github/workflows/release.yml)               | tag `v*.*.*` poussé à la main| Filet de secours : rejoue CI puis build/push multi-arch sur GHCR                                    |
 
-Le déploiement reste manuel (`faas-cli up` / `helm`) — choix volontaire pour le PoC.
+Toutes les publications GHCR utilisent `provenance: false` (évite les entrées d'arch `unknown/unknown`). Les images sortent en multi-arch `linux/amd64,linux/arm64`. Le déploiement sur cluster reste manuel (`./scripts/prod/install.sh` ou `helm upgrade`) — choix volontaire pour le PoC.
 
 ## Versioning
 

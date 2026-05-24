@@ -57,19 +57,24 @@ curl -s -X POST http://127.0.0.1:5001/ \
 
 ## Full stack with docker-compose (Traefik)
 
-`docker compose up -d --build` starts the **full dev stack**: MariaDB, the 3 built
-functions and a **Traefik** reverse-proxy that mimics the OpenFaaS gateway.
+`docker compose up -d --build` starts the **full dev stack**: MariaDB 12, the 3 built
+functions, a **Traefik v3.7** reverse-proxy that mimics the OpenFaaS gateway, and
+**CloudBeaver** for inspecting the DB through a web UI.
 
 ```bash
 docker compose up -d --build
 ```
 
-| Service             | Host port | Role                                                    |
-|---------------------|-----------|---------------------------------------------------------|
-| Traefik             | `8080`    | Gateway — routes `/function/<name>` to each function    |
-| Traefik (dashboard) | `8090`    | <http://localhost:8090/dashboard/> — discovered routes  |
-| phpMyAdmin          | `8082`    | DB inspection                                           |
-| MariaDB             | `3306`    | Database                                                |
+| Service             | Host port | Role                                                                                  |
+|---------------------|-----------|---------------------------------------------------------------------------------------|
+| Traefik             | `8080`    | Gateway — routes `/function/<name>` to each function                                  |
+| Traefik (dashboard) | `8090`    | <http://localhost:8090/dashboard/> — discovered routes                                |
+| CloudBeaver         | `8082`    | <http://localhost:8082> — SQL web UI; admin = `cofrap_admin` / `${CB_ADMIN_PASSWORD:-admin}` |
+| MariaDB             | `3306`    | Database                                                                              |
+
+> CloudBeaver replaces phpMyAdmin: modern, multi-DBMS, and the `cofrap-db` connection
+> is preconfigured in `deploy/cloudbeaver/workspace/.../data-sources.json` (the host is
+> the `mariadb` Docker-network service, not `localhost`).
 
 The functions then answer exactly as behind the OpenFaaS gateway:
 

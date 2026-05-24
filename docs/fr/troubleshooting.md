@@ -34,10 +34,14 @@ Puis recharger l'env (`source .env` / `Get-Content .env | ...`).
 Pas authentifié au registre. Pour GHCR :
 
 ```bash
-echo $GITHUB_TOKEN | docker login ghcr.io -u <votre-handle> --password-stdin
+echo $GHCR_PAT | docker login ghcr.io -u <votre-handle> --password-stdin
 ```
 
-Le `GITHUB_TOKEN` doit avoir le scope `write:packages`.
+Le PAT doit avoir le scope `write:packages` (PAT classique ou fine-grained avec « Packages: read & write »). Côté CI, les workflows utilisent un secret `GHCR_PAT_TOKEN` (un PAT custom — pas `GITHUB_TOKEN`, refusé par la policy GHCR de certaines orgs et bloqué de toute façon : GitHub interdit la création de secrets préfixés `GITHUB_`).
+
+### GHCR : `denied` / `unauthorized` au `docker pull` alors que la release est passée
+
+Le repo peut être public sans que le **package** OCI le soit. Aller sur `https://github.com/orgs/<org>/packages/container/<function>/settings` → **Change package visibility** → Public. À refaire pour chacune des 3 fonctions après le **premier push**.
 
 ### Image trop grosse
 
@@ -176,6 +180,25 @@ La validation Pydantic a refusé le payload. La réponse contient le détail :
 ```
 
 Vérifier que le `Content-Type: application/json` est bien envoyé et que le JSON est valide.
+
+### `429 Too Many Requests` — `{"detail":"rate limit exceeded"}`
+
+Le rate-limit slowapi (cf. [`security.md`](security.md)) a tapé. Quota par défaut : `120/minute` par IP. Trois leviers possibles :
+
+```bash
+# Augmenter le quota (ex. 600/minute)
+helm upgrade cofrap deploy/helm/cofrap --reuse-values \
+  --set functions.env.RATE_LIMIT="600/minute"
+
+# Désactiver totalement (utile en charge de test)
+helm upgrade cofrap deploy/helm/cofrap --reuse-values \
+  --set functions.env.RATE_LIMIT_ENABLED=false
+
+# Localement (docker-compose) : ajouter dans .env
+RATE_LIMIT=600/minute
+```
+
+Si le `429` provient d'**of-watchdog** (et non de slowapi), c'est que `max_inflight` (défaut `10`) est atteint — la fonction est saturée par des requêtes simultanées. Diagnostic : pas de `detail: "rate limit exceeded"` dans le body (réponse texte de of-watchdog). Solutions : scaler le Deployment (`kubectl -n openfaas-fn scale deploy <fn> --replicas=3`) ou relever `max_inflight` (au prix de plus de connexions MariaDB ouvertes).
 
 ### Le QR code généré donne un mot de passe illisible / déchiffrement échoue
 
