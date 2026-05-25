@@ -196,7 +196,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Download coverage and ruff reports
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: '*-report*' # Récupère ruff-report et coverage-...
           merge-multiple: true
