@@ -84,7 +84,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          provenance: true
-          sbom: true
+          # provenance: false → pas d'attestation = pas d'entrée "unknown/unknown" sur GHCR
+          provenance: false
           cache-from: type=gha,scope=${{ matrix.function }}
           cache-to: type=gha,mode=max,scope=${{ matrix.function }}

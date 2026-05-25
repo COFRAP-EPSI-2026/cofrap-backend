@@ -1,33 +1,38 @@
-name: Release
+name: Pre-release (dev)
+
+# Sur chaque push de la branche `dev` :
+#   1. `validate` rejoue toute la CI (lint + tests + build des 3 images) via ci.yml.
+#   2. Si tout est vert, `publish` construit et pousse les images de pré-release
+#      sur GHCR, taguées `dev` (mobile) et `dev-<sha>` (traçable).
+#
+# Le numéro de version stable (2026.X.Y) n'est calculé qu'au merge sur `main`
+# par Release Please — ici on ne produit que des images de test de la branche dev.
 
 on:
   push:
-    tags:
-      - "v*.*.*"
-
+    branches: [dev]
+  merge_group:
+    branches: [dev]
 permissions:
   contents: read
-  packages: write
 
 concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: false
+  group: pre-release-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   GITHUB_TOKEN: ${{ secrets.GHCR_PAT_TOKEN }}
   SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
 jobs:
-  lint-test:
-    name: Lint + tests (gate)
+  validate:
+    name: Validation (CI)
     uses: ./.github/workflows/ci.yml
     secrets: inherit
-    permissions:
-      contents: read
 
-  build-push:
-    name: Build & push ${{ matrix.function }}
-    needs: lint-test
+  publish:
+    name: Build & push dev image (${{ matrix.function }})
+    needs: validate
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -38,10 +43,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Resolve version from tag
-        id: version
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
 
@@ -50,8 +51,6 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          # Le GITHUB_TOKEN auto est refusé par la politique Packages de l'org :
-          # on passe par un PAT (secret GHCR_PAT_TOKEN, scope write:packages).
           password: ${{ secrets.GHCR_PAT_TOKEN }}
 
       - name: Image metadata
@@ -60,10 +59,8 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository_owner }}/${{ matrix.function }}
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=raw,value=latest
+            type=raw,value=dev
+            type=sha,prefix=dev-,format=short
 
       - name: Build & push
         uses: docker/build-push-action@v6
@@ -73,7 +70,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # provenance: false → pas d'attestation = pas d'entrée "unknown/unknown" sur GHCR
           provenance: false
           cache-from: type=gha,scope=${{ matrix.function }}
           cache-to: type=gha,mode=max,scope=${{ matrix.function }}

@@ -125,7 +125,11 @@ Everything that is not a secret is set in `stack.yml` (`environment:` per functi
 Releases are automated by **Release Please** (`release-please.yml` workflow):
 1. Conventional commits (`feat:`, `fix:`) pushed to `main` feed a "Release PR".
 2. Merging that PR creates the `vX.Y.Z` tag + the GitHub Release and bumps every version file.
-3. The same workflow builds the 3 multi-arch images (amd64 + arm64) and pushes them to `ghcr.io/<org>/<function>:<version>` with SBOM and provenance attestation.
+3. The same workflow builds the 3 multi-arch images (`linux/amd64,linux/arm64`) and pushes them to `ghcr.io/<org>/<function>:<version>` + `:latest`.
+
+> **`provenance: false`** is passed to `docker/build-push-action`: otherwise GHCR also shows an `unknown/unknown` architecture entry (the OCI provenance attestation) which confuses some clients (k3s, older registries). The SBOM is in the same boat — disabled for now, to be re-enabled once a registry that fully supports OCI attestations is in place.
+
+On the `dev` branch, the [`pre-release.yml`](../../.github/workflows/pre-release.yml) workflow runs on every push (and merge-group): it replays `ci.yml`, then publishes the **`:dev`** and **`:dev-<sha>`** images to GHCR — handy to test a change in-cluster ahead of a stable release.
 
 The `release.yml` workflow remains available for a manually pushed `v*.*.*` tag (fallback).
 

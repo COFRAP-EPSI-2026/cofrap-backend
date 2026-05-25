@@ -33,7 +33,7 @@ Everything runs **serverless** (OpenFaaS Community) on Kubernetes, with MariaDB 
 | HTTP framework           | **FastAPI** + Uvicorn (ASGI)          | Free Pydantic validation, auto OpenAPI, ASGI performance                                   |
 | Serverless runtime       | **OpenFaaS Community** + of-watchdog  | Mandated by the brief; `Scale to Zero` aligned with the cost-saving goal                   |
 | Containers               | Slim Python image + of-watchdog HTTP  | Documented standard; lets FastAPI/Uvicorn run as the upstream                              |
-| Database                 | **MariaDB 11** (K8s StatefulSet)      | SQL recommended by the client; simple, robust, flat single-table schema                    |
+| Database                 | **MariaDB 12** (K8s StatefulSet; `mariadb:12` in local dev) | SQL recommended by the client; simple, robust, flat single-table schema       |
 | Python driver            | **PyMySQL** (pure Python)             | No native dependency → slim Python image, fast CI build                                    |
 | Application encryption   | **Fernet** (`cryptography`)           | Authenticated AES-128-CBC + HMAC-SHA256, simple API, multi-key rotation possible           |
 | TOTP generation          | **pyotp**                             | RFC 6238 implementation compatible with Google Authenticator/Authy                         |

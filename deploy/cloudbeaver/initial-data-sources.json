@@ -1,0 +1,31 @@
+{
+  "folders": {},
+  "connections": {
+    "mariadb-connection": {
+      "provider": "mysql",
+      "driver": "mariadb_jdbc",
+      "name": "MariaDB - cofrap",
+      "save-password": true,
+      "configuration": {
+        "host": "mariadb",
+        "port": "3306",
+        "database": "cofrap",
+        "url": "jdbc:mariadb://mariadb:3306/cofrap",
+        "type": "dev",
+        "auth-model": "native",
+        "user": "cofrap",
+        "password": "cofrap_dev"
+      }
+    }
+  },
+  "connection-types": {
+    "dev": {
+      "name": "Development",
+      "color": "255,255,255",
+      "description": "Regular development database",
+      "auto-commit": true,
+      "confirm-execute": false,
+      "confirm-data-change": false
+    }
+  }
+}

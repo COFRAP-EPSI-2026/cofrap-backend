@@ -1,0 +1,7 @@
+# Configuration Bandit (YAML)
+exclude_dirs:
+  - 'tests'
+  - '.venv'
+  - '.git'
+skips:
+  - 'B101' # Autorise l'usage de 'assert'

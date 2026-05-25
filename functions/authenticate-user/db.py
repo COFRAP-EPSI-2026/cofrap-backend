@@ -23,4 +23,9 @@ def get_connection() -> pymysql.connections.Connection:
         database=os.getenv("DB_NAME", "cofrap"),
         charset="utf8mb4",
         autocommit=False,
+        # Timeouts : une BDD lente ou injoignable fait échouer vite la requête
+        # au lieu d'empiler les connexions et de saturer MariaDB.
+        connect_timeout=int(os.getenv("DB_CONNECT_TIMEOUT", "5")),
+        read_timeout=int(os.getenv("DB_READ_TIMEOUT", "10")),
+        write_timeout=int(os.getenv("DB_WRITE_TIMEOUT", "10")),
     )

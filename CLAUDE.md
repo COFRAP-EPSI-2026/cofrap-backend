@@ -12,10 +12,11 @@ Le `README.md` (FR) et `README.en.md` (EN) racine sont la porte d'entrée utilis
 
 - **Python 3.12** + **FastAPI** + Uvicorn (ASGI), exécuté par **of-watchdog** en mode HTTP.
 - **OpenFaaS Community** sur Kubernetes (recommandé K3S, ou minikube en repli).
-- **MariaDB 11** (StatefulSet K8s + `docker-compose.yml` pour dev local).
-- Driver Python : **PyMySQL** (pure Python, pas d'extension native).
+- **MariaDB 12** (StatefulSet K8s + `docker-compose.yml` pour dev local — `mariadb:12`).
+- Driver Python : **PyMySQL** (pure Python, pas d'extension native), avec timeouts (`connect_timeout`, `read_timeout`, `write_timeout`) pour éviter qu'une requête bloquée ne sature le pool.
 - Chiffrement applicatif : **Fernet** (`cryptography`) sur les champs `password` et `mfa` en BDD.
 - 2FA : **pyotp** (RFC 6238), QR code via **qrcode** + PIL.
+- Anti-DoS applicatif : **slowapi** (rate-limit IP-based) + `max_inflight` of-watchdog (limite de requêtes concurrentes par pod).
 
 Architecture complète : [`docs/fr/architecture.md`](docs/fr/architecture.md). Justifications : [`docs/fr/adr/`](docs/fr/adr/).
 
@@ -33,8 +34,11 @@ bruno/                 # collection Bruno prête à l'emploi (envs + flux nomina
 docs/
   fr/ , en/            # doc bilingue EN MIROIR (installation, architecture, api, deployment, security, dev, testing, troubleshooting, adr/)
   openapi.yaml         # contrat OpenAPI 3.1 (neutre, à la racine de docs/)
-scripts/               # install / uninstall / build-images (.sh + .ps1) + generate-openapi.py
-.github/workflows/     # ci.yml (PR + push main) + release.yml (sur tag v*)
+scripts/
+  prod/                # déploiement cluster : install / uninstall / build-images (.sh + .ps1)
+  dev/                 # dev local : pilotage de la stack docker-compose (.sh + .ps1)
+  generate-openapi.py  # génération du contrat OpenAPI
+.github/workflows/     # ci.yml (validation PR) + pre-release.yml (push dev) + release-please.yml + release.yml
 stack.yml              # manifeste OpenFaaS (alternative au chart, pour `faas-cli up`)
 docker-compose.yml     # stack dev local : MariaDB + 3 fonctions + Traefik (gateway :8080)
 pyproject.toml         # ruff + pytest config (line-length 100, target py312)
@@ -89,9 +93,9 @@ faas-cli secret list
 ### Déploiement complet (chart Helm)
 
 ```bash
-./scripts/install.sh             # Linux / WSL / Git Bash
-./scripts/install.ps1            # Windows PowerShell
-./scripts/uninstall.sh           # nettoyage
+./scripts/prod/install.sh             # Linux / WSL / Git Bash
+./scripts/prod/install.ps1            # Windows PowerShell
+./scripts/prod/uninstall.sh           # nettoyage
 ```
 
 Voir [`docs/fr/installation.md`](docs/fr/installation.md) pour les variantes K3s / minikube / cluster existant. Le chart vit dans [`deploy/helm/cofrap/`](deploy/helm/cofrap/). Pour valider sans appliquer : `helm lint deploy/helm/cofrap && helm template cofrap deploy/helm/cofrap --set secrets.encryptionKey=x --set secrets.mariadbPassword=x --set secrets.mariadbRootPassword=x`.
@@ -122,6 +126,9 @@ python scripts/generate-openapi.py    # → docs/openapi.yaml
 - **Tests d'intégration** = MariaDB **réelle** (pas de mock). Si tu changes une requête SQL, le test d'intégration doit la valider. Voir `tests/integration/test_full_flow.py`.
 - **Format des réponses d'erreur** : utiliser `HTTPException(status_code=…, detail="…")` avec un message en anglais lowercase (`"invalid credentials"`, `"invalid otp"`, `"user not found"`). Plusieurs tests asserent sur ces strings.
 - **`response_model` Pydantic** : les handlers utilisent des modèles de réponse explicites pour enrichir l'OpenAPI. Le handler `authenticate-user` utilise `response_model_exclude_none=True` parce que ses champs `username` et `action` sont conditionnels. Préserve cette config en l'étendant.
+- **Rate limiting (slowapi)** : chaque `main.py` câble un `Limiter` + `SlowAPIMiddleware`. Clé : IP client extraite via `X-Forwarded-For` (premier hop), sinon `get_remote_address`. Limite par défaut `120/minute` (override via `RATE_LIMIT`), désactivable via `RATE_LIMIT_ENABLED=false`. Le `healthz` est annoté `@limiter.exempt` pour rester probable par les sondes K8s. Le dépassement renvoie un `429` avec `detail: "rate limit exceeded"`. Préserve ce câblage si tu refactores.
+- **of-watchdog `max_inflight`** : chaque Dockerfile fixe `ENV max_inflight="10"` — borne le nombre de requêtes simultanées par pod (au-delà : `429`). C'est ce qui empêche la BDD de saturer si un pod prend du trafic.
+- **DB timeouts** : `db.py` lit `DB_CONNECT_TIMEOUT` (5s), `DB_READ_TIMEOUT` (10s), `DB_WRITE_TIMEOUT` (10s). Pas de connexion bloquée indéfiniment → garde le pool sain.
 - **`pyproject.toml`** : la ligne `line-length` est à **100**, pas 88 (défaut ruff). Penser à `ruff format` avant de commit.
 - **Markers pytest stricts** : tout test doit être annoté `pytestmark = pytest.mark.unit` ou `integration` (le strict est activé dans `pyproject.toml`).
 - **Bruno : URL par fonction** : les requêtes utilisent `{{generate_password_url}}` / `{{generate_2fa_url}}` / `{{authenticate_user_url}}` (pas un seul `{{gateway}}`). Cela permet de switcher entre mode direct uvicorn (3 ports) et mode OpenFaaS gateway (1 URL avec `/function/<name>`) en changeant juste d'environnement.
@@ -131,8 +138,9 @@ python scripts/generate-openapi.py    # → docs/openapi.yaml
 
 Trois workflows GitHub Actions :
 
-- [`ci.yml`](.github/workflows/ci.yml) : `ruff` + `pytest` (avec service MariaDB 11) + build des 3 images Docker (sans push). Réutilisable via `workflow_call`.
-- [`release-please.yml`](.github/workflows/release-please.yml) : sur push `main`, Release Please maintient la Release PR ; au merge → tag + GitHub Release + build/push des 3 images multi-arch. **Voie principale de release.**
+- [`ci.yml`](.github/workflows/ci.yml) : `ruff` + `pytest` (avec service MariaDB) + build des 3 images Docker (sans push). Réutilisable via `workflow_call`.
+- [`pre-release.yml`](.github/workflows/pre-release.yml) : sur push `dev` (et merge-group), rejoue `ci.yml` puis publie les images `:dev` (+ `:dev-<sha>`) sur GHCR (multi-arch).
+- [`release-please.yml`](.github/workflows/release-please.yml) : sur push `main`, Release Please maintient la Release PR ; au merge → tag + GitHub Release + build/push des 3 images multi-arch + `:latest`. **Voie principale de release.**
 - [`release.yml`](.github/workflows/release.yml) : sur tag `v*.*.*` poussé manuellement → build multi-arch + push GHCR. Filet de secours pour un tag posé à la main.
 
 Le déploiement sur cluster est **manuel** (`faas-cli up` / `helm`) — pas de CD automatique.
@@ -147,7 +155,7 @@ Fonctionnement :
 - Le bump des fichiers est piloté par l'annotation `x-release-please-version` posée sur la ligne de version de chaque fichier, et par la liste `extra-files` de [`release-please-config.json`](release-please-config.json).
 
 Fichiers porteurs de version (annotés `x-release-please-version`, bumpés automatiquement) :
-`pyproject.toml`, `deploy/helm/cofrap/Chart.yaml` (×2 : `version` + `appVersion`), `deploy/helm/cofrap/values.yaml`, `stack.yml` (×3 `image:`), `functions/*/main.py` (×3), `scripts/generate-openapi.py`, `scripts/build-images.sh` + `.ps1`, `README.md` + `README.en.md` (ligne « version courante »).
+`pyproject.toml`, `deploy/helm/cofrap/Chart.yaml` (×2 : `version` + `appVersion`), `deploy/helm/cofrap/values.yaml`, `stack.yml` (×3 `image:`), `functions/*/main.py` (×3), `scripts/generate-openapi.py`, `scripts/prod/build-images.sh` + `.ps1`, `README.md` + `README.en.md` (ligne « version courante »).
 
 **Si tu ajoutes un nouveau fichier portant la version** : pose l'annotation `# x-release-please-version` (ou `<!-- x-release-please-version -->` en markdown) sur la ligne, et ajoute le chemin dans `extra-files` de `release-please-config.json`.
 

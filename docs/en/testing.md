@@ -129,7 +129,7 @@ Workflow [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml):
 2. `pytest --cov=functions --cov-report=xml --junitxml=pytest-report.xml`
 3. Build of the 3 Docker images (without push)
 
-The `test` job spins up `mariadb:11` as a `services:` container with a health check; the credentials match the defaults in `tests/conftest.py`.
+The `test` job spins up `mariadb:12` as a `services:` container with a health check; the credentials match the defaults in `tests/conftest.py`.
 
 The `coverage.xml` and `pytest-report.xml` artifacts are uploaded at the end of the run (handy to wire up Codecov or a visualiser later).
 

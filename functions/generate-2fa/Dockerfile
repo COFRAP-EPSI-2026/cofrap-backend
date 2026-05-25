@@ -7,7 +7,8 @@ RUN chmod +x /usr/bin/fwatchdog
 # Lie l'image GHCR au dépôt GitHub (section "Packages" du repo) + licence.
 LABEL org.opencontainers.image.source="https://github.com/COFRAP-EPSI-2026/cofrap-backend" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.title="cofrap-generate-2fa"
+      org.opencontainers.image.title="cofrap-generate-2fa" \
+      org.opencontainers.image.description="Fonction serverless COFRAP — génère un secret TOTP (RFC 6238) et son QR code otpauth:// (PoC MSPR TPRE912)."
 
 RUN addgroup --system --gid 10001 app && adduser --system --ingroup app --uid 10001 app
 
@@ -28,6 +29,9 @@ ENV cgi_headers="true"
 ENV exec_timeout="30s"
 ENV write_timeout="30s"
 ENV read_timeout="30s"
+# of-watchdog : limite les requêtes concurrentes par instance (HTTP 429 au-delà).
+# Borne le nombre de connexions MariaDB ouvertes simultanément.
+ENV max_inflight="10"
 
 EXPOSE 8080
 # Sonde de santé en Python : l'image python:3.12-slim n'embarque ni wget ni curl.

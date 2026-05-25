@@ -57,19 +57,24 @@ curl -s -X POST http://127.0.0.1:5001/ \
 
 ## Stack complète avec docker-compose (Traefik)
 
-`docker compose up -d --build` démarre la **stack complète** de dev : MariaDB, les
-3 fonctions buildées et un reverse-proxy **Traefik** qui imite le gateway OpenFaaS.
+`docker compose up -d --build` démarre la **stack complète** de dev : MariaDB 12, les
+3 fonctions buildées, un reverse-proxy **Traefik v3.7** qui imite le gateway OpenFaaS,
+et **CloudBeaver** pour inspecter la BDD via une UI web.
 
 ```bash
 docker compose up -d --build
 ```
 
-| Service             | Port hôte | Rôle                                                    |
-|---------------------|-----------|---------------------------------------------------------|
-| Traefik             | `8080`    | Gateway — route `/function/<name>` vers chaque fonction |
-| Traefik (dashboard) | `8090`    | <http://localhost:8090/dashboard/> — routes découvertes |
-| phpMyAdmin          | `8082`    | Inspection de la BDD                                    |
-| MariaDB             | `3306`    | Base de données                                         |
+| Service             | Port hôte | Rôle                                                                          |
+|---------------------|-----------|-------------------------------------------------------------------------------|
+| Traefik             | `8080`    | Gateway — route `/function/<name>` vers chaque fonction                       |
+| Traefik (dashboard) | `8090`    | <http://localhost:8090/dashboard/> — routes découvertes                       |
+| CloudBeaver         | `8082`    | <http://localhost:8082> — UI web SQL ; admin = `cofrap_admin` / `${CB_ADMIN_PASSWORD:-admin}` |
+| MariaDB             | `3306`    | Base de données                                                               |
+
+> CloudBeaver remplace phpMyAdmin : moderne, multi-SGBD, et la connexion `cofrap-db` est
+> préconfigurée dans `deploy/cloudbeaver/workspace/.../data-sources.json` (l'hôte est le
+> service `mariadb` du réseau Docker, pas `localhost`).
 
 Les fonctions répondent alors exactement comme derrière le gateway OpenFaaS :
 
@@ -121,7 +126,19 @@ pytest tests/unit/test_generate_password.py::test_password_meets_complexity -v
 2. `ruff check --fix . && ruff format .`
 3. `pytest` (vert ?)
 4. Tester en local : `uvicorn main:app --reload` puis curl ou la [collection Bruno](../../bruno/).
-5. Commit + PR. La CI rejoue lint + tests + build des 3 images Docker.
+5. Push sur `dev` (ou PR). La CI valide automatiquement — cf. ci-dessous.
+
+## Intégration continue et releases
+
+Trois workflows GitHub Actions, faciles à suivre :
+
+| Workflow | Déclencheur | Rôle |
+|----------|-------------|------|
+| `ci.yml` | PR vers `dev` ou `main` | **Validation** : `ruff` + `pytest` + build des 3 images (sans push) |
+| `pre-release.yml` | push sur `dev` | Rejoue `ci.yml` ; si vert, **publie les images `:dev`** (+ `:dev-<sha>`) sur GHCR |
+| `release-please.yml` | push sur `main` | **Release stable** : Release PR → merge → tag `vX.Y.Z` + images `2026.X.Y` + `latest` |
+
+Versionnement **calendaire** automatisé par Release Please (`feat:` → bump mineur, `fix:` → correctif) — ne jamais bumper la version à la main (cf. [`CLAUDE.md`](../../CLAUDE.md)). Le déploiement sur cluster reste manuel : [`scripts/prod/install.sh`](../../scripts/prod/install.sh) ou `helm`.
 
 ## Mettre à jour les modules partagés
 

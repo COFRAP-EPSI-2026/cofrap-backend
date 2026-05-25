@@ -4,10 +4,15 @@ import time
 import pyotp
 from crypto import encrypt
 from db import get_connection
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from qr import make_qr_png_base64
+from slowapi import Limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from slowapi.util import get_remote_address
 
 ISSUER = os.getenv("TOTP_ISSUER", "COFRAP")
 
@@ -33,6 +38,34 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# --- Rate limiting (slowapi) --------------------------------------------------
+# Protège l'API : au-delà de RATE_LIMIT requêtes par IP → HTTP 429. Combiné à
+# `max_inflight` (of-watchdog) et aux timeouts BDD, borne la charge et évite de
+# saturer MariaDB. RATE_LIMIT_ENABLED=0 désactive (utile en test).
+def _client_ip(request: Request) -> str:
+    """Clé de rate-limit : vraie IP client (X-Forwarded-For) ou IP directe."""
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return get_remote_address(request)
+
+
+limiter = Limiter(
+    key_func=_client_ip,
+    default_limits=[os.getenv("RATE_LIMIT", "120/minute")],
+    enabled=os.getenv("RATE_LIMIT_ENABLED", "true").lower() not in ("0", "false", "no"),
+)
+
+
+def _rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    return JSONResponse(status_code=429, content={"detail": "rate limit exceeded"})
+
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 
 class GenerateRequest(BaseModel):
@@ -61,6 +94,7 @@ class HealthResponse(BaseModel):
     summary="Génère et stocke le secret TOTP d'un utilisateur existant",
     responses={
         404: {"description": "Utilisateur inconnu — appeler `generate-password` au préalable."},
+        429: {"description": "Trop de requêtes — rate limit dépassé."},
         500: {"description": "Erreur BDD — la transaction est rollback."},
     },
 )
@@ -112,5 +146,6 @@ def handler(req: GenerateRequest) -> dict:
     summary="Sonde de santé",
     tags=["health"],
 )
+@limiter.exempt
 def healthz() -> dict:
     return {"status": "ok"}

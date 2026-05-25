@@ -34,10 +34,14 @@ Then reload the env (`source .env` / `Get-Content .env | ...`).
 Not authenticated to the registry. For GHCR:
 
 ```bash
-echo $GITHUB_TOKEN | docker login ghcr.io -u <your-handle> --password-stdin
+echo $GHCR_PAT | docker login ghcr.io -u <your-handle> --password-stdin
 ```
 
-The `GITHUB_TOKEN` must have the `write:packages` scope.
+The PAT must have the `write:packages` scope (classic PAT or fine-grained with "Packages: read & write"). On the CI side, the workflows use a `GHCR_PAT_TOKEN` secret (a custom PAT — not `GITHUB_TOKEN`, refused by some orgs' GHCR policy and blocked anyway: GitHub forbids creating secrets prefixed with `GITHUB_`).
+
+### GHCR: `denied` / `unauthorized` on `docker pull` even though the release succeeded
+
+The repo can be public while the OCI **package** is not. Go to `https://github.com/orgs/<org>/packages/container/<function>/settings` → **Change package visibility** → Public. Do this for each of the 3 functions after the **first push**.
 
 ### Image too large
 
@@ -53,10 +57,10 @@ Build locally and load into the cluster:
 
 ```bash
 # Linux / WSL / Git Bash
-./scripts/build-images.sh
+./scripts/prod/build-images.sh
 
 # Windows PowerShell
-./scripts/build-images.ps1
+./scripts/prod/build-images.ps1
 ```
 
 The script auto-detects minikube / K3s / K3d / KinD and uses the right mechanism (`docker-env` for minikube, `k3s ctr images import` for K3s, `kind load`, etc.).
@@ -72,7 +76,7 @@ kubectl -n openfaas-fn rollout restart deployment -l 'faas_function'
 For a remote cluster, push to your own registry:
 
 ```bash
-REGISTRY=ghcr.io/my-org PUSH=1 ./scripts/build-images.sh
+REGISTRY=ghcr.io/my-org PUSH=1 ./scripts/prod/build-images.sh
 # then
 helm upgrade cofrap ./deploy/helm/cofrap -n cofrap --reuse-values \
   --set functions.registry=ghcr.io/my-org
@@ -116,8 +120,8 @@ kubectl -n openfaas-fn get deploy,svc,pods -l 'faas_function'
 Re-deploy the chart:
 
 ```bash
-./scripts/install.sh                     # Linux / WSL / Git Bash
-./scripts/install.ps1                    # Windows PowerShell
+./scripts/prod/install.sh                     # Linux / WSL / Git Bash
+./scripts/prod/install.ps1                    # Windows PowerShell
 
 # or directly:
 helm upgrade --install cofrap deploy/helm/cofrap \
@@ -150,7 +154,7 @@ The `cofrap` chart does not depend on the operator — it deploys functions as p
 If a previous `helm upgrade ... --set operator.create=true` failed, the existing OpenFaaS install is intact. To cleanly reinstall the functions, just rerun the script:
 
 ```bash
-./scripts/install.sh -SkipOpenFaaS    # Windows: ./scripts/install.ps1 -SkipOpenFaaS
+./scripts/prod/install.sh -SkipOpenFaaS    # Windows: ./scripts/prod/install.ps1 -SkipOpenFaaS
 ```
 
 ### `pymysql.err.OperationalError: (2003, "Can't connect to MySQL server")`
@@ -176,6 +180,25 @@ Pydantic validation rejected the payload. The response contains the detail:
 ```
 
 Check that `Content-Type: application/json` is sent and that the JSON is valid.
+
+### `429 Too Many Requests` — `{"detail":"rate limit exceeded"}`
+
+The slowapi rate-limit (see [`security.md`](security.md)) kicked in. Default quota: `120/minute` per IP. Three knobs:
+
+```bash
+# Raise the quota (e.g. 600/minute)
+helm upgrade cofrap deploy/helm/cofrap --reuse-values \
+  --set functions.env.RATE_LIMIT="600/minute"
+
+# Disable entirely (handy for load tests)
+helm upgrade cofrap deploy/helm/cofrap --reuse-values \
+  --set functions.env.RATE_LIMIT_ENABLED=false
+
+# Locally (docker-compose): add to .env
+RATE_LIMIT=600/minute
+```
+
+If the `429` actually comes from **of-watchdog** (not slowapi), it means `max_inflight` (default `10`) was reached — the function is saturated by concurrent requests. Telltale: no `detail: "rate limit exceeded"` in the body (of-watchdog returns a plaintext response). Fixes: scale the Deployment (`kubectl -n openfaas-fn scale deploy <fn> --replicas=3`) or raise `max_inflight` (at the cost of more open MariaDB connections).
 
 ### The generated QR code yields an unreadable password / decryption fails
 

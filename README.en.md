@@ -10,7 +10,7 @@
 [![Python](https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![OpenFaaS](https://img.shields.io/badge/OpenFaaS-Community-3b4cca?logo=openfaas&logoColor=white)](https://www.openfaas.com/)
-[![MariaDB](https://img.shields.io/badge/MariaDB-11-003545?logo=mariadb&logoColor=white)](https://mariadb.org/)
+[![MariaDB](https://img.shields.io/badge/MariaDB-12-003545?logo=mariadb&logoColor=white)](https://mariadb.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 
@@ -58,7 +58,7 @@ TypeScript frontend in a separate repo · detailed documentation in [`docs/en/`]
                                           │  └─ encryption-key (Fernet)
 ```
 
-**Stack**: Python 3.12 · FastAPI · Uvicorn · of-watchdog (HTTP mode) · PyMySQL · Fernet · pyotp · qrcode · MariaDB 11.
+**Stack**: Python 3.12 · FastAPI · Uvicorn · of-watchdog (HTTP mode) · PyMySQL · Fernet · pyotp · qrcode · slowapi (rate limiting) · MariaDB 12.
 
 → Details and rationale: [`docs/en/architecture.md`](docs/en/architecture.md) and [`docs/en/adr/`](docs/en/adr/).
 
@@ -111,10 +111,10 @@ The full stack (MariaDB + OpenFaaS + 3 functions) in **one command** via a dedic
 
 ```bash
 # Linux / macOS / WSL / Git Bash
-./scripts/install.sh
+./scripts/prod/install.sh
 
 # Windows PowerShell
-./scripts/install.ps1
+./scripts/prod/install.ps1
 ```
 
 The script checks the prerequisites (`kubectl`, `helm`), installs OpenFaaS if absent, generates the secrets (Fernet key + MariaDB passwords), then deploys the [`deploy/helm/cofrap`](deploy/helm/cofrap) chart.
@@ -135,12 +135,16 @@ pytest --cov=functions        # with coverage
 
 ## CI/CD
 
-Two GitHub Actions workflows:
+Four GitHub Actions workflows:
 
-- [`ci.yml`](.github/workflows/ci.yml) — on PR and push to `main`: `ruff` + `pytest` (with a MariaDB service) + build of the 3 Docker images.
-- [`release.yml`](.github/workflows/release.yml) — on a `v*.*.*` tag: replays CI then **multi-arch build (amd64/arm64) + push to GHCR** of the 3 functions, with SBOM and provenance attestation.
+| Workflow                                                     | Trigger                       | Role                                                                                                |
+|--------------------------------------------------------------|-------------------------------|-----------------------------------------------------------------------------------------------------|
+| [`ci.yml`](.github/workflows/ci.yml)                         | PR to `dev` or `main`         | **Validation**: `ruff` + `pytest` (MariaDB service) + build of the 3 images (no push) — reusable via `workflow_call` |
+| [`pre-release.yml`](.github/workflows/pre-release.yml)       | push to `dev` (+ merge group) | Replays `ci.yml`, then **publishes `:dev` images** (+ `:dev-<sha>`) to GHCR (multi-arch amd64/arm64) |
+| [`release-please.yml`](.github/workflows/release-please.yml) | push to `main`                | **Primary release path**: maintains the Release PR; on merge → tag `vX.Y.Z` + images `2026.X.Y` + `latest` |
+| [`release.yml`](.github/workflows/release.yml)               | manual `v*.*.*` tag           | Fallback: replays CI then multi-arch build/push to GHCR                                             |
 
-Deployment stays manual (`faas-cli up` / `helm`) — a deliberate choice for the PoC.
+All GHCR publications use `provenance: false` (avoids `unknown/unknown` arch entries). Images ship in multi-arch `linux/amd64,linux/arm64`. Cluster deployment stays manual (`./scripts/prod/install.sh` or `helm upgrade`) — a deliberate choice for the PoC.
 
 ## Versioning
 
@@ -187,8 +191,11 @@ Releases are **automated by [Release Please](https://github.com/googleapis/relea
 │   ├── fr/                         # French documentation
 │   ├── en/                         # English documentation
 │   └── openapi.yaml                # OpenAPI contract (language-neutral)
-├── scripts/                        # install / build-images / generate-openapi
-└── .github/workflows/              # CI + Release
+├── scripts/
+│   ├── prod/                       # cluster deployment (install / uninstall / build-images)
+│   ├── dev/                        # local dev (docker-compose control)
+│   └── generate-openapi.py         # OpenAPI contract generation
+└── .github/workflows/              # ci.yml · pre-release.yml (dev) · release-please.yml · release.yml
 ```
 
 ## Documentation
