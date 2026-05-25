@@ -2,9 +2,9 @@
 # Installe la stack COFRAP (OpenFaaS + chart cofrap) sur un cluster Kubernetes.
 #
 # Usage :
-#   ./scripts/install.sh                       # défauts (namespace cofrap, release cofrap)
-#   NAMESPACE=demo ./scripts/install.sh        # override
-#   SKIP_OPENFAAS=1 ./scripts/install.sh       # cluster qui a déjà OpenFaaS
+#   ./scripts/prod/install.sh                       # défauts (namespace cofrap, release cofrap)
+#   NAMESPACE=demo ./scripts/prod/install.sh        # override
+#   SKIP_OPENFAAS=1 ./scripts/prod/install.sh       # cluster qui a déjà OpenFaaS
 #
 # Pré-requis : kubectl + helm configurés sur le cluster cible, python (avec cryptography) ou openssl.
 #
@@ -19,7 +19,7 @@ OPENFAAS_FN_NAMESPACE="${OPENFAAS_FN_NAMESPACE:-openfaas-fn}"
 SKIP_OPENFAAS="${SKIP_OPENFAAS:-0}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CHART_PATH="${SCRIPT_DIR}/../deploy/helm/cofrap"
+CHART_PATH="${SCRIPT_DIR}/../../deploy/helm/cofrap"
 
 # ─── helpers ────────────────────────────────────────────────────────────────
 red()    { printf '\033[31m%s\033[0m\n' "$*"; }
