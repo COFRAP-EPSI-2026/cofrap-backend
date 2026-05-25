@@ -10,10 +10,15 @@ The COFRAP brief was explicitly reworked because of **compromised accounts cause
 4. Protect credentials at rest → Fernet encryption in the DB.
 5. Reduce the network attack surface → functions invoked only through the OpenFaaS gateway.
 
+Implemented on top of the brief, to stay healthy under load:
+- **Application-level rate limiting** (slowapi, per-IP) on the 3 functions
+- **`max_inflight` of-watchdog** (concurrent-request cap per pod)
+- **DB timeouts** (connect / read / write) so stuck connections are released quickly
+
 Out of PoC scope (handled by another team per the brief):
-- Rate limiting / anti-spam on account creation
-- Brute-force protection
+- Brute-force protection (server-side account lock-out after N failures — the frontend does a local lock-out)
 - Anomaly detection (geo-IP, device fingerprint, etc.)
+- WAF / anti-spam at the edge (Cloudflare, NGINX `limit_req`)
 
 ## Password generation
 
@@ -45,6 +50,44 @@ The key (32 url-safe base64 bytes) lives only in the `encryption-key` OpenFaaS s
 - The **plaintext password** is never persisted nor logged. It leaves `generate-password` exactly once, encoded in a base64 PNG QR. The frontend must display it and prompt the user to scan it immediately, without showing it again.
 - The **TOTP secret** leaves `generate-2fa` in two redundant forms (`otpauth://` URI + PNG QR). The URI contains the secret in clear text (base32) — that is the standard; security relies on the gateway's TLS channel.
 - **TLS mandatory in production** on the OpenFaaS gateway (cert-manager + Let's Encrypt via `arkade install openfaas-ingress`).
+
+## Rate limiting (slowapi)
+
+Each function wires a [slowapi](https://github.com/laurentS/slowapi) `Limiter` + `SlowAPIMiddleware`. Past the per-IP quota the API answers `429 Too Many Requests` with `{"detail":"rate limit exceeded"}`.
+
+Configured via environment variables (overridable without rebuilding the image):
+
+| Variable             | Default      | Effect                                                                            |
+|----------------------|--------------|-----------------------------------------------------------------------------------|
+| `RATE_LIMIT`         | `120/minute` | Per-IP quota. slowapi syntax: `"<n>/<period>"` (`second`, `minute`, `hour`, `day`). |
+| `RATE_LIMIT_ENABLED` | `true`       | Set to `false` to disable the middleware entirely (useful in tests).              |
+
+Counting key: the IP is read primarily from the `X-Forwarded-For` header (first hop), otherwise via `slowapi.util.get_remote_address`. In-cluster, that means the **real client IP** is throttled even behind the OpenFaaS gateway and an NGINX/Traefik Ingress — provided the upstream reverse-proxy fills `X-Forwarded-For` (the standard case).
+
+The `/healthz` endpoint is annotated `@limiter.exempt` — Kubernetes probes keep reaching it even under attack.
+
+> **Limits of the implementation**: slowapi keeps the counter **in-memory per pod**. With multiple replicas, the effective quota is *(replicas) × RATE_LIMIT*. For a strict global quota, plug slowapi into a shared backend (Redis) or move the limit onto the Ingress / gateway.
+
+## of-watchdog `max_inflight`
+
+Each `Dockerfile` sets `ENV max_inflight="10"`: this is the **hard cap** on concurrent requests per pod. Beyond it, of-watchdog itself answers `429` — the Python function is not even called, which keeps the uvicorn queue from blowing up and the MariaDB connections from saturating.
+
+Combined with the slowapi limit, you get two layers of protection:
+
+1. **slowapi** filters bursts from a single IP (HTTP application layer).
+2. **max_inflight** caps the actual load regardless of how many clients are involved.
+
+## MariaDB timeouts
+
+`db.py` passes the following three timeouts to `pymysql.connect()` (overridable via env, values in seconds):
+
+| Variable             | Default | Effect                                                       |
+|----------------------|---------|--------------------------------------------------------------|
+| `DB_CONNECT_TIMEOUT` | `5`     | Max time to establish the TCP/SSL connection                 |
+| `DB_READ_TIMEOUT`    | `10`    | Max time to receive a query response                         |
+| `DB_WRITE_TIMEOUT`   | `10`    | Max time to send a query                                     |
+
+Practical effect: if MariaDB is slow, frozen or loses the connection, the function returns an error **within seconds** instead of waiting forever and blocking a `max_inflight` slot.
 
 ## CORS
 
@@ -107,9 +150,9 @@ pip-audit -r functions/generate-password/requirements.txt
 
 Beyond the PoC scope:
 
-1. Add rate limiting at the OpenFaaS gateway or upstream (Cloudflare, NGINX ingress `limit_req`).
+1. Back slowapi with a **shared store** (Redis) so the rate-limit becomes global across replicas, or move the limit onto the Ingress / OpenFaaS gateway.
 2. Enable mTLS between the functions and MariaDB.
-3. Move the Fernet key into a managed KMS (AWS KMS, GCP KMS, Azure Key Vault, HashiCorp Vault) rather than a K8s secret.
+3. Move the Fernet key into a **managed KMS** (AWS KMS, GCP KMS, Azure Key Vault, HashiCorp Vault) rather than a K8s secret.
 4. Application audit log (who authenticated, success/failure, IP) with appropriate retention.
 5. Adversarial testing (OWASP ZAP, Burp) on the exposed gateway.
-6. SBOM and image signing (already enabled in the `release.yml` workflow via `provenance: true` and `sbom: true`).
+6. Re-enable supply-chain attestations (`provenance: true` + `sbom: true`) once a registry that supports OCI attestations is in place — currently disabled on GHCR because they introduce `unknown/unknown` entries in the architecture list (see [`deployment.md`](deployment.md)).
