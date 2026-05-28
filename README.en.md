@@ -148,7 +148,7 @@ All GHCR publications use `provenance: false` (avoids `unknown/unknown` arch ent
 
 ## Versioning
 
-**Calendar** versioning `YEAR.MINOR.PATCH` — current version: **2026.2.0**. <!-- x-release-please-version -->
+**Calendar** versioning `YEAR.MINOR.PATCH` — current version: **2026.4.0**. <!-- x-release-please-version -->
 
 Releases are **automated by [Release Please](https://github.com/googleapis/release-please)** (Google's tool), driven by [Conventional Commits](https://www.conventionalcommits.org/):
 

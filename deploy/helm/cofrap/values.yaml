@@ -15,6 +15,14 @@ openfaas:
 # **Vide par défaut** : les scripts `install.sh` / `install.ps1` génèrent les valeurs
 # et les passent à Helm via `--set`. Tu peux aussi les fournir manuellement.
 secrets:
+  # -- Si `true` (défaut), le chart CRÉE les 3 Secrets (encryption-key,
+  # mariadb-password dans openfaas-fn + <release>-mariadb-credentials) à partir
+  # des valeurs ci-dessous. C'est le mode des scripts install.sh/.ps1 (Phase 1).
+  #
+  # Mettre à `false` en GitOps (ArgoCD) : le chart ne crée NI ne valide les
+  # secrets — ils doivent être pré-créés dans le cluster (à la main, Sealed
+  # Secrets, External Secrets Operator…). Évite de stocker des secrets en Git.
+  create: true
   # Clé Fernet (32 bytes URL-safe base64) pour chiffrer password/mfa en BDD.
   # Générer avec : python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
   encryptionKey: ""
@@ -54,7 +62,7 @@ functions:
   enabled: true
   # Registry + tag des images. Override pour pointer vers ton propre fork.
   registry: ghcr.io/cofrap-epsi-2026
-  version: "2026.2.0"  # x-release-please-version
+  version: "2026.4.0"  # x-release-please-version
   pullPolicy: IfNotPresent
 
   # Variables d'environnement passées à toutes les fonctions.
