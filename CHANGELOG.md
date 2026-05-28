@@ -18,6 +18,13 @@ La même version est portée par : `pyproject.toml`, `deploy/helm/cofrap/Chart.y
 
 ---
 
+## [2026.5.0](https://github.com/COFRAP-EPSI-2026/cofrap-backend/compare/v2026.4.0...v2026.5.0) (2026-05-28)
+
+
+### Features
+
+* Ajouter la gestion des secrets pour OpenFaaS et MariaDB dans les valeurs Helm ([a72fd2e](https://github.com/COFRAP-EPSI-2026/cofrap-backend/commit/a72fd2eb9c4c6e7657f6ad54429640e0d3e4a2bf))
+
 ## [2026.4.0](https://github.com/COFRAP-EPSI-2026/cofrap-backend/compare/v2026.3.2...v2026.4.0) (2026-05-25)
 
 

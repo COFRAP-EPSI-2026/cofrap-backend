@@ -62,7 +62,7 @@ functions:
   enabled: true
   # Registry + tag des images. Override pour pointer vers ton propre fork.
   registry: ghcr.io/cofrap-epsi-2026
-  version: "2026.4.0"  # x-release-please-version
+  version: "2026.5.0"  # x-release-please-version
   pullPolicy: IfNotPresent
 
   # Variables d'environnement passées à toutes les fonctions.

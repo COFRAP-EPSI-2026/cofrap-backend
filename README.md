@@ -149,7 +149,7 @@ Toutes les publications GHCR utilisent `provenance: false` (évite les entrées 
 
 ## Versioning
 
-Versioning **calendaire** `ANNÉE.MINEUR.CORRECTIF` — version courante : **2026.4.0**. <!-- x-release-please-version -->
+Versioning **calendaire** `ANNÉE.MINEUR.CORRECTIF` — version courante : **2026.5.0**. <!-- x-release-please-version -->
 
 Les releases sont **automatisées par [Release Please](https://github.com/googleapis/release-please)** (l'outil de Google), à partir des [Conventional Commits](https://www.conventionalcommits.org/) :
 
