@@ -7,7 +7,7 @@ functions:
   generate-password:
     lang: dockerfile
     handler: ./functions/generate-password
-    image: ghcr.io/cofrap-epsi-2026/generate-password:2026.4.0 # x-release-please-version
+    image: ghcr.io/cofrap-epsi-2026/generate-password:2026.5.0 # x-release-please-version
     secrets:
       - mariadb-password
       - encryption-key
@@ -24,7 +24,7 @@ functions:
   generate-2fa:
     lang: dockerfile
     handler: ./functions/generate-2fa
-    image: ghcr.io/cofrap-epsi-2026/generate-2fa:2026.4.0 # x-release-please-version
+    image: ghcr.io/cofrap-epsi-2026/generate-2fa:2026.5.0 # x-release-please-version
     secrets:
       - mariadb-password
       - encryption-key
@@ -42,7 +42,7 @@ functions:
   authenticate-user:
     lang: dockerfile
     handler: ./functions/authenticate-user
-    image: ghcr.io/cofrap-epsi-2026/authenticate-user:2026.4.0 # x-release-please-version
+    image: ghcr.io/cofrap-epsi-2026/authenticate-user:2026.5.0 # x-release-please-version
     secrets:
       - mariadb-password
       - encryption-key
