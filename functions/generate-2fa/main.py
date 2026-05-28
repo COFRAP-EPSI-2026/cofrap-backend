@@ -18,7 +18,7 @@ ISSUER = os.getenv("TOTP_ISSUER", "COFRAP")
 
 app = FastAPI(
     title="cofrap-generate-2fa",
-    version="2026.3.2",  # x-release-please-version
+    version="2026.4.0",  # x-release-please-version
     summary="Génère un secret TOTP (RFC 6238) et son QR code otpauth:// pour un utilisateur existant.",
 )
 
