@@ -167,7 +167,7 @@ jobs:
         function: [generate-password, generate-2fa, authenticate-user]
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
       - name: Build ${{ matrix.function }}
         uses: docker/build-push-action@v6
         with:
