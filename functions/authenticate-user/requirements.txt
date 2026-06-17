@@ -4,4 +4,4 @@ pydantic==2.13.4
 pymysql==1.2.0
 slowapi==0.1.9
 cryptography==48.0.0
-pyotp==2.9.0
+pyotp==2.10.0
