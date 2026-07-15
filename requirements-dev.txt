@@ -11,7 +11,7 @@ httpx==0.28.1
 
 # Dépendances applicatives — installées globalement pour exécuter les tests
 fastapi==0.136.1
-uvicorn[standard]==0.47.0
+uvicorn[standard]==0.51.0
 pydantic==2.13.4
 pymysql==1.2.0
 slowapi==0.1.9
