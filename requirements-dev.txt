@@ -10,7 +10,7 @@ pytest-cov==7.1.0
 httpx==0.28.1
 
 # Dépendances applicatives — installées globalement pour exécuter les tests
-fastapi==0.136.1
+fastapi==0.140.13
 uvicorn[standard]==0.47.0
 pydantic==2.13.4
 pymysql==1.2.0
