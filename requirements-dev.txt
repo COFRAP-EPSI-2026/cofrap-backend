@@ -2,7 +2,7 @@
 # Les fonctions ont leurs propres requirements.txt (utilisés par les Dockerfile).
 
 # Lint / format
-ruff==0.15.13
+ruff==0.16.3
 
 # Tests
 pytest==9.0.3
